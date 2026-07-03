@@ -94,6 +94,10 @@ function DocumentsTab({ supabase, profile }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [classCode, setClassCode] = useState(profile.class_code || "");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [linkTitle, setLinkTitle] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("documents").select("*").order("created_at", { ascending: false });
@@ -109,6 +113,36 @@ function DocumentsTab({ supabase, profile }) {
     load();
   };
 
+  const uploadFiles = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    setUploading(true);
+    setUploadError("");
+    for (const file of files) {
+      const safeName = file.name
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-zA-Z0-9_.-]/g, "_");
+      const path = `${profile.id}/${Date.now()}-${safeName}`;
+      const { error } = await supabase.storage.from("documents").upload(path, file);
+      if (error) { setUploadError(error.message); continue; }
+      const { data } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("documents").insert({
+        owner_id: profile.id, title: file.name, file_url: data.publicUrl, class_code: classCode || null,
+      });
+    }
+    setUploading(false);
+    load();
+  };
+
+  const addLink = async () => {
+    if (!linkUrl.trim()) return;
+    await supabase.from("documents").insert({
+      owner_id: profile.id, title: linkTitle.trim() || linkUrl.trim(), file_url: linkUrl.trim(), class_code: classCode || null,
+    });
+    setLinkTitle(""); setLinkUrl("");
+    load();
+  };
+
   const remove = async (id) => { await supabase.from("documents").delete().eq("id", id); load(); };
 
   return (
@@ -116,15 +150,37 @@ function DocumentsTab({ supabase, profile }) {
       <SectionHeader title="Documents" subtitle="Déposez des supports partagés avec votre classe." action={profile.role === "enseignant" && <Btn onClick={() => setOpen(true)}>+ Déposer un document</Btn>} />
       {open && (
         <div style={{ ...cardStyle, background: COLORS.paperDim, marginBottom: 16 }}>
+          <F label="Code de classe (optionnel, s'applique à tout ce que vous ajoutez ci-dessous)">
+            <input style={inputStyle} value={classCode} onChange={(e) => setClassCode(e.target.value)} />
+          </F>
+
+          <F label="Fichiers depuis un disque (local, réseau ou virtuel) — plusieurs à la fois">
+            <input type="file" multiple style={inputStyle} onChange={(e) => uploadFiles(e.target.files)} disabled={uploading} />
+          </F>
+          {uploading && <p style={{ fontSize: 12, color: COLORS.amber }}>Envoi en cours…</p>}
+          {uploadError && <p style={{ fontSize: 12, color: COLORS.rust }}>{uploadError}</p>}
+
+          <F label="Ou lien web (Google Drive, OneDrive, Dropbox, site…)">
+            <div style={{ display: "flex", gap: 8 }}>
+              <input style={{ ...inputStyle, flex: 1 }} placeholder="Titre (optionnel)" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} />
+              <input style={{ ...inputStyle, flex: 2 }} placeholder="https://..." value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} />
+            </div>
+          </F>
+          <Btn ghost onClick={addLink}>+ Ajouter le lien</Btn>
+
+          <hr style={{ border: "none", borderTop: `1px dashed ${COLORS.line}`, margin: "16px 0" }} />
+
           <F label="Titre"><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} /></F>
           <F label="Contenu"><textarea style={{ ...inputStyle, minHeight: 90 }} value={content} onChange={(e) => setContent(e.target.value)} /></F>
-          <F label="Code de classe (optionnel)"><input style={inputStyle} value={classCode} onChange={(e) => setClassCode(e.target.value)} /></F>
-          <Btn onClick={add}>Publier</Btn> <Btn ghost onClick={() => setOpen(false)}>Annuler</Btn>
+          <Btn onClick={add}>Publier une note texte</Btn> <Btn ghost onClick={() => setOpen(false)}>Fermer</Btn>
         </div>
       )}
       {docs.length === 0 ? <Empty text="Aucun document." /> : docs.map((d) => (
         <div key={d.id} style={{ ...cardStyle, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-          <div><strong>{d.title}</strong><p style={{ fontSize: 13, color: "#666" }}>{d.content}</p></div>
+          <div>
+            <strong>{d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer">{d.title}</a> : d.title}</strong>
+            {d.content && <p style={{ fontSize: 13, color: "#666" }}>{d.content}</p>}
+          </div>
           {d.owner_id === profile.id && <button onClick={() => remove(d.id)} style={{ color: COLORS.rust, background: "none", border: "none", cursor: "pointer" }}>Supprimer</button>}
         </div>
       ))}
@@ -292,7 +348,7 @@ function DevoirsTab({ supabase, profile }) {
             {profile.role === "enseignant" ? (
               <div>
                 <span style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>{subs.length} réponse(s)</span>
-                {subs.map((s) => <SubCard key={s.id} s={s} />)}
+                {subs.map((s) => <SubCard key={s.id} s={s} supabase={supabase} isTeacher onUpdated={load} />)}
               </div>
             ) : !mySub ? (
               <>
@@ -307,16 +363,76 @@ function DevoirsTab({ supabase, profile }) {
   );
 }
 
-function SubCard({ s }) {
+function SubCard({ s, supabase, isTeacher, onUpdated }) {
+  const c = s.correction;
+  const [editing, setEditing] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(c?.note || "");
+  const [commentDraft, setCommentDraft] = useState(c?.commentaire_general || "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    await supabase.from("submissions").update({
+      correction: { ...c, note: noteDraft, commentaire_general: commentDraft },
+    }).eq("id", s.id);
+    setSaving(false);
+    setEditing(false);
+    onUpdated?.();
+  };
+
   return (
     <div style={{ border: `1px solid ${COLORS.line}`, borderRadius: 9, padding: 14, background: COLORS.paperDim, marginTop: 8 }}>
       <p style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{s.answer_text}</p>
       {s.status === "en_attente" && <p style={{ fontSize: 12, color: COLORS.amber }}>Correction en cours…</p>}
       {s.status === "erreur" && <p style={{ fontSize: 12, color: COLORS.rust }}>La correction a échoué.</p>}
-      {s.status === "corrige" && s.correction && (
+      {s.status === "corrige" && c && editing ? (
         <div>
-          <strong style={{ color: COLORS.green }}>{s.correction.note}</strong>
-          <p style={{ fontSize: 13 }}>{s.correction.commentaire_general}</p>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Note</label>
+          <input style={{ ...inputStyle, marginBottom: 10 }} value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} />
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Commentaire général</label>
+          <textarea style={{ ...inputStyle, minHeight: 70, marginBottom: 10 }} value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} />
+          <Btn onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Btn>{" "}
+          <Btn ghost onClick={() => { setEditing(false); setNoteDraft(c.note); setCommentDraft(c.commentaire_general); }}>Annuler</Btn>
+        </div>
+      ) : s.status === "corrige" && c && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <strong style={{ color: COLORS.green, fontSize: 15 }}>{c.note}</strong>
+            {isTeacher && <button onClick={() => setEditing(true)} style={{ fontSize: 12, background: "none", border: "none", color: COLORS.ink, cursor: "pointer", textDecoration: "underline" }}>Modifier</button>}
+          </div>
+          <p style={{ fontSize: 13 }}>{c.commentaire_general}</p>
+
+          {c.points_forts?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.green }}>Points forts</span>
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
+                {c.points_forts.map((p, i) => <li key={i}>{p}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {c.points_a_ameliorer?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.amber }}>À améliorer</span>
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
+                {c.points_a_ameliorer.map((p, i) => <li key={i}>{p}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {c.erreurs_relevees?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.rust }}>Erreurs relevées</span>
+              {c.erreurs_relevees.map((e, i) => (
+                <div key={i} style={{ fontSize: 13, marginTop: 4 }}>
+                  <span style={{ textDecoration: "line-through", color: COLORS.rust }}>{e.extrait}</span>
+                  {" → "}
+                  <span style={{ color: COLORS.green }}>{e.correction}</span>
+                  <div style={{ fontSize: 12, color: "#777" }}>{e.explication}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

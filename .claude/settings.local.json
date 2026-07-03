@@ -4,7 +4,18 @@
       "Bash(npm install *)",
       "Bash(node -e ' *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git config *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP status: %{http_code}\\\\n\" https://fls-clic.vercel.app/login)",
+      "Bash(curl -s https://fls-clic.vercel.app/login)",
+      "Bash(curl -s \"https://oqodjrkctrvgnnnydkzb.supabase.co/storage/v1/object/public/documents/258451e4-ab03-4f73-a625-1e0b66bfa90c/1783091763194-test1.txt\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP status: %{http_code}\\\\n\" \"https://oqodjrkctrvgnnnydkzb.supabase.co/storage/v1/object/public/documents/258451e4-ab03-4f73-a625-1e0b66bfa90c/1783092061633-_U54_-_Description_de_l_unite_-_Conversations_triviales.pdf\")"
     ]
   }
 }
