@@ -12,7 +12,25 @@ const TABS = [
   { id: "activites", label: "Activités interactives" },
   { id: "grilles", label: "Grilles d'évaluation" },
   { id: "devoirs", label: "Devoirs & correction IA" },
+  { id: "profil", label: "Mon profil" },
+  { id: "admin", label: "Administration", teacherOnly: true },
 ];
+
+function applyClassFilter(query, profile) {
+  if (profile.role !== "apprenant") return query;
+  return profile.class_code
+    ? query.or(`class_code.is.null,class_code.eq.${profile.class_code}`)
+    : query.is("class_code", null);
+}
+
+function useNow() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -21,29 +39,31 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [tab, setTab] = useState("documents");
   const [loading, setLoading] = useState(true);
+  const now = useNow();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        router.replace("/login");
-        return;
-      }
-      setSession(session);
-      let { data: p } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
-      if (!p) {
-        const meta = session.user.user_metadata || {};
-        const { data: created } = await supabase.from("profiles").insert({
-          id: session.user.id,
-          name: meta.name || session.user.email,
-          role: meta.role || "apprenant",
-          class_code: meta.class_code || null,
-        }).select().single();
-        p = created;
-      }
-      setProfile(p);
-      setLoading(false);
-    });
+  const loadProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.replace("/login");
+      return;
+    }
+    setSession(session);
+    let { data: p } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+    if (!p) {
+      const meta = session.user.user_metadata || {};
+      const { data: created } = await supabase.from("profiles").insert({
+        id: session.user.id,
+        name: meta.name || session.user.email,
+        role: meta.role || "apprenant",
+        class_code: meta.class_code || null,
+      }).select().single();
+      p = created;
+    }
+    setProfile(p);
+    setLoading(false);
   }, [supabase, router]);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -58,7 +78,12 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight: "100vh", background: COLORS.paper }}>
       <header style={{ background: COLORS.ink, color: "#fff", padding: "14px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <strong style={{ fontSize: 18 }}>Le Carnet de route linguistique</strong>
+        <strong style={{ fontSize: 18 }}>Le Carnet de route linguistique FLS/CLIC</strong>
+        <div style={{ fontSize: 12, opacity: 0.8 }}>
+          {(() => { const d = now.toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" }); return d.charAt(0).toUpperCase() + d.slice(1); })()}
+          {" · "}
+          {now.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ textAlign: "right", fontSize: 12 }}>
             <div style={{ fontWeight: 600 }}>{profile.name}</div>
@@ -69,7 +94,7 @@ export default function Dashboard() {
       </header>
 
       <nav style={{ display: "flex", gap: 4, padding: "0 28px", background: "#fff", borderBottom: `1px solid ${COLORS.line}`, overflowX: "auto" }}>
-        {TABS.map((t) => (
+        {TABS.filter((t) => !t.teacherOnly || profile.role === "enseignant").map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: "14px 16px", border: "none", background: "transparent", cursor: "pointer", fontWeight: 600, fontSize: 13.5,
             color: tab === t.id ? COLORS.ink : COLORS.inkSoft, borderBottom: `3px solid ${tab === t.id ? COLORS.amber : "transparent"}`, whiteSpace: "nowrap",
@@ -82,6 +107,8 @@ export default function Dashboard() {
         {tab === "activites" && <ActivitesTab supabase={supabase} profile={profile} />}
         {tab === "grilles" && <GrillesTab />}
         {tab === "devoirs" && <DevoirsTab supabase={supabase} profile={profile} />}
+        {tab === "profil" && <ProfilTab supabase={supabase} profile={profile} onProfileUpdated={loadProfile} />}
+        {tab === "admin" && profile.role === "enseignant" && <AdminTab supabase={supabase} profile={profile} />}
       </main>
     </div>
   );
@@ -100,9 +127,9 @@ function DocumentsTab({ supabase, profile }) {
   const [linkUrl, setLinkUrl] = useState("");
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("documents").select("*").order("created_at", { ascending: false });
+    const { data } = await applyClassFilter(supabase.from("documents").select("*").order("created_at", { ascending: false }), profile);
     setDocs(data || []);
-  }, [supabase]);
+  }, [supabase, profile]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -179,6 +206,7 @@ function DocumentsTab({ supabase, profile }) {
         <div key={d.id} style={{ ...cardStyle, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
           <div>
             <strong>{d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer">{d.title}</a> : d.title}</strong>
+            {d.class_code && <span style={{ fontSize: 11, color: "#888", marginLeft: 6 }}>· {d.class_code}</span>}
             {d.content && <p style={{ fontSize: 13, color: "#666" }}>{d.content}</p>}
           </div>
           {d.owner_id === profile.id && <button onClick={() => remove(d.id)} style={{ color: COLORS.rust, background: "none", border: "none", cursor: "pointer" }}>Supprimer</button>}
@@ -192,45 +220,76 @@ function DocumentsTab({ supabase, profile }) {
 function ActivitesTab({ supabase, profile }) {
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState("quiz");
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState([{ q: "", options: ["", ""], correct: 0 }]);
+  const [embedUrl, setEmbedUrl] = useState("");
+  const [classCode, setClassCode] = useState(profile.class_code || "");
   const [playing, setPlaying] = useState(null);
   const [answers, setAnswers] = useState({});
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("activities").select("*").order("created_at", { ascending: false });
+    const { data } = await applyClassFilter(supabase.from("activities").select("*").order("created_at", { ascending: false }), profile);
     setItems(data || []);
-  }, [supabase]);
+  }, [supabase, profile]);
   useEffect(() => { load(); }, [load]);
 
   const publish = async () => {
     if (!title.trim()) return;
-    await supabase.from("activities").insert({ owner_id: profile.id, title, questions });
-    setTitle(""); setQuestions([{ q: "", options: ["", ""], correct: 0 }]); setOpen(false);
+    if (kind === "h5p") {
+      if (!embedUrl.trim()) return;
+      await supabase.from("activities").insert({ owner_id: profile.id, title, questions: [], embed_url: embedUrl.trim(), class_code: classCode || null });
+    } else {
+      await supabase.from("activities").insert({ owner_id: profile.id, title, questions, class_code: classCode || null });
+    }
+    setTitle(""); setQuestions([{ q: "", options: ["", ""], correct: 0 }]); setEmbedUrl(""); setOpen(false);
     load();
   };
 
-  const score = playing ? playing.questions.reduce((a, q, i) => a + (answers[i] === q.correct ? 1 : 0), 0) : 0;
+  const score = playing && !playing.embed_url ? playing.questions.reduce((a, q, i) => a + (answers[i] === q.correct ? 1 : 0), 0) : 0;
 
   return (
     <div>
       <SectionHeader title="Activités interactives" subtitle="Quiz courts pour pratiquer." action={profile.role === "enseignant" && <Btn onClick={() => setOpen(true)}>+ Nouvelle activité</Btn>} />
       {open && (
         <div style={{ ...cardStyle, background: COLORS.paperDim, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {[{ id: "quiz", label: "Quiz" }, { id: "h5p", label: "Contenu H5P (lien)" }].map((k) => (
+              <button key={k.id} type="button" onClick={() => setKind(k.id)} style={{
+                flex: 1, padding: "8px 0", borderRadius: 7, cursor: "pointer",
+                border: `1.5px solid ${kind === k.id ? COLORS.ink : COLORS.line}`,
+                background: kind === k.id ? COLORS.ink : "#fff",
+                color: kind === k.id ? "#fff" : COLORS.ink, fontWeight: 600, fontSize: 13,
+              }}>{k.label}</button>
+            ))}
+          </div>
+
           <F label="Titre"><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} /></F>
-          {questions.map((q, i) => (
-            <div key={i} style={{ ...cardStyle, marginBottom: 10 }}>
-              <F label={`Question ${i + 1}`}><input style={inputStyle} value={q.q} onChange={(e) => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, q: e.target.value } : x))} /></F>
-              {q.options.map((opt, oi) => (
-                <div key={oi} style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-                  <input type="radio" checked={q.correct === oi} onChange={() => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, correct: oi } : x))} />
-                  <input style={{ ...inputStyle, flex: 1 }} value={opt} onChange={(e) => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, options: x.options.map((o, oidx) => oidx === oi ? e.target.value : o) } : x))} />
+          <F label="Code de classe (optionnel — laisser vide pour partager avec toutes les classes)">
+            <input style={inputStyle} value={classCode} onChange={(e) => setClassCode(e.target.value)} />
+          </F>
+
+          {kind === "h5p" ? (
+            <F label="Lien d'intégration H5P (ex. depuis h5p.com, ou l'URL d'embarquement fournie par votre hébergeur H5P)">
+              <input style={inputStyle} placeholder="https://..." value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} />
+            </F>
+          ) : (
+            <>
+              {questions.map((q, i) => (
+                <div key={i} style={{ ...cardStyle, marginBottom: 10 }}>
+                  <F label={`Question ${i + 1}`}><input style={inputStyle} value={q.q} onChange={(e) => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, q: e.target.value } : x))} /></F>
+                  {q.options.map((opt, oi) => (
+                    <div key={oi} style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                      <input type="radio" checked={q.correct === oi} onChange={() => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, correct: oi } : x))} />
+                      <input style={{ ...inputStyle, flex: 1 }} value={opt} onChange={(e) => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, options: x.options.map((o, oidx) => oidx === oi ? e.target.value : o) } : x))} />
+                    </div>
+                  ))}
+                  <button onClick={() => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, options: [...x.options, ""] } : x))} style={{ fontSize: 12, background: "none", border: "none", color: COLORS.ink, cursor: "pointer" }}>+ Ajouter un choix</button>
                 </div>
               ))}
-              <button onClick={() => setQuestions((qs) => qs.map((x, idx) => idx === i ? { ...x, options: [...x.options, ""] } : x))} style={{ fontSize: 12, background: "none", border: "none", color: COLORS.ink, cursor: "pointer" }}>+ Ajouter un choix</button>
-            </div>
-          ))}
-          <Btn ghost onClick={() => setQuestions((qs) => [...qs, { q: "", options: ["", ""], correct: 0 }])}>+ Ajouter une question</Btn>{" "}
+              <Btn ghost onClick={() => setQuestions((qs) => [...qs, { q: "", options: ["", ""], correct: 0 }])}>+ Ajouter une question</Btn>{" "}
+            </>
+          )}
           <Btn onClick={publish}>Publier</Btn> <Btn ghost onClick={() => setOpen(false)}>Annuler</Btn>
         </div>
       )}
@@ -238,23 +297,186 @@ function ActivitesTab({ supabase, profile }) {
       {playing ? (
         <div style={cardStyle}>
           <h3>{playing.title}</h3>
-          {playing.questions.map((q, i) => (
-            <div key={i} style={{ marginBottom: 14 }}>
-              <p style={{ fontWeight: 600 }}>{i + 1}. {q.q}</p>
-              {q.options.map((opt, oi) => (
-                <button key={oi} onClick={() => setAnswers((a) => ({ ...a, [i]: oi }))} style={{ display: "block", width: "100%", textAlign: "left", padding: 8, marginBottom: 4, borderRadius: 6, border: `1.5px solid ${answers[i] === oi ? COLORS.ink : COLORS.line}`, background: "#fff", cursor: "pointer" }}>{opt}</button>
+          {playing.embed_url ? (
+            <iframe title={playing.title} src={playing.embed_url} style={{ width: "100%", height: "70vh", minHeight: 480, border: "none" }} />
+          ) : (
+            <>
+              {playing.questions.map((q, i) => (
+                <div key={i} style={{ marginBottom: 14 }}>
+                  <p style={{ fontWeight: 600 }}>{i + 1}. {q.q}</p>
+                  {q.options.map((opt, oi) => (
+                    <button key={oi} onClick={() => setAnswers((a) => ({ ...a, [i]: oi }))} style={{ display: "block", width: "100%", textAlign: "left", padding: 8, marginBottom: 4, borderRadius: 6, border: `1.5px solid ${answers[i] === oi ? COLORS.ink : COLORS.line}`, background: "#fff", cursor: "pointer" }}>{opt}</button>
+                  ))}
+                </div>
               ))}
-            </div>
-          ))}
-          <p>Score : {score} / {playing.questions.length}</p>
+              <p>Score : {score} / {playing.questions.length}</p>
+            </>
+          )}
           <Btn ghost onClick={() => { setPlaying(null); setAnswers({}); }}>Fermer</Btn>
         </div>
       ) : items.length === 0 ? <Empty text="Aucune activité." /> : items.map((a) => (
         <div key={a.id} style={{ ...cardStyle, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <strong>{a.title}</strong>
+          <strong>{a.title}{a.embed_url && <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}> · H5P</span>}{a.class_code && <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}> · {a.class_code}</span>}</strong>
           <Btn onClick={() => { setPlaying(a); setAnswers({}); }}>{profile.role === "enseignant" ? "Aperçu" : "Commencer"}</Btn>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ---------------- PROFIL ---------------- */
+function ProfilTab({ supabase, profile, onProfileUpdated }) {
+  const [name, setName] = useState(profile.name || "");
+  const [classCode, setClassCode] = useState(profile.class_code || "");
+  const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState("");
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setEmail(session?.user?.email || ""));
+  }, [supabase]);
+
+  const saveProfile = async () => {
+    setSaving(true); setSavedMsg("");
+    await supabase.from("profiles").update({
+      name,
+      class_code: profile.role === "apprenant" ? (classCode || null) : profile.class_code,
+    }).eq("id", profile.id);
+    setSaving(false);
+    setSavedMsg("Enregistré.");
+    onProfileUpdated?.();
+  };
+
+  const changePassword = async () => {
+    setPwError(""); setPwSuccess(false);
+    if (newPassword.length < 6) { setPwError("Le mot de passe doit contenir au moins 6 caractères."); return; }
+    if (newPassword !== confirmPassword) { setPwError("Les mots de passe ne correspondent pas."); return; }
+    setPwSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPwSaving(false);
+    if (error) { setPwError(error.message); return; }
+    setPwSuccess(true);
+    setNewPassword(""); setConfirmPassword("");
+  };
+
+  return (
+    <div>
+      <SectionHeader title="Mon profil" subtitle="Vos informations personnelles et votre mot de passe." />
+
+      <div style={{ ...cardStyle, marginBottom: 16, maxWidth: 480 }}>
+        <F label="Nom complet"><input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} /></F>
+        <F label="Courriel"><input style={{ ...inputStyle, background: "#f2f2f2" }} value={email} disabled /></F>
+        <F label="Rôle"><input style={{ ...inputStyle, background: "#f2f2f2", textTransform: "capitalize" }} value={profile.role} disabled /></F>
+        {profile.role === "apprenant" && (
+          <F label="Code de classe"><input style={inputStyle} value={classCode} onChange={(e) => setClassCode(e.target.value)} /></F>
+        )}
+        <Btn onClick={saveProfile} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Btn>
+        {savedMsg && <span style={{ marginLeft: 10, fontSize: 13, color: COLORS.green }}>{savedMsg}</span>}
+      </div>
+
+      <div style={{ ...cardStyle, maxWidth: 480 }}>
+        <h3 style={{ marginTop: 0, color: COLORS.ink }}>Changer le mot de passe</h3>
+        <F label="Nouveau mot de passe (min. 6 caractères)"><input type="password" style={inputStyle} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></F>
+        <F label="Confirmer le mot de passe"><input type="password" style={inputStyle} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></F>
+        {pwError && <p style={{ color: COLORS.rust, fontSize: 13 }}>{pwError}</p>}
+        {pwSuccess && <p style={{ color: COLORS.green, fontSize: 13 }}>Mot de passe mis à jour.</p>}
+        <Btn onClick={changePassword} disabled={pwSaving}>{pwSaving ? "Enregistrement…" : "Changer le mot de passe"}</Btn>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- ADMINISTRATION ---------------- */
+function AdminTab({ supabase, profile }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [savingId, setSavingId] = useState(null);
+  const [drafts, setDrafts] = useState({});
+
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/users", { headers: { Authorization: `Bearer ${session.access_token}` } });
+    const json = await res.json();
+    if (json.error) { setError(json.error); setLoading(false); return; }
+    setUsers(json.users);
+    setDrafts(Object.fromEntries(json.users.map((u) => [u.id, { role: u.role, class_code: u.class_code || "" }])));
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async (id) => {
+    setSavingId(id);
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ id, role: drafts[id].role, class_code: drafts[id].class_code }),
+    });
+    setSavingId(null);
+    load();
+  };
+
+  const remove = async (id, name) => {
+    if (!window.confirm(`Supprimer définitivement le compte de ${name} ? Cette action est irréversible et supprimera aussi tout son contenu (documents, activités, devoirs).`)) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetch(`/api/admin/users?id=${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    load();
+  };
+
+  return (
+    <div>
+      <SectionHeader title="Administration" subtitle="Vue d'ensemble des comptes et des classes." />
+      {error && <p style={{ color: COLORS.rust, fontSize: 13 }}>{error}</p>}
+      {loading ? <p>Chargement…</p> : (
+        <div style={{ ...cardStyle, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: `2px solid ${COLORS.line}` }}>
+                <th style={{ padding: 8 }}>Nom</th>
+                <th style={{ padding: 8 }}>Courriel</th>
+                <th style={{ padding: 8 }}>Rôle</th>
+                <th style={{ padding: 8 }}>Code de classe</th>
+                <th style={{ padding: 8 }}>Créé le</th>
+                <th style={{ padding: 8 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+                  <td style={{ padding: 8 }}>{u.name}{u.id === profile.id && " (vous)"}</td>
+                  <td style={{ padding: 8 }}>{u.email}</td>
+                  <td style={{ padding: 8 }}>
+                    <select value={drafts[u.id]?.role || u.role} onChange={(e) => setDrafts((d) => ({ ...d, [u.id]: { ...d[u.id], role: e.target.value } }))} style={{ padding: 4 }}>
+                      <option value="apprenant">Apprenant</option>
+                      <option value="enseignant">Enseignant</option>
+                    </select>
+                  </td>
+                  <td style={{ padding: 8 }}>
+                    <input value={drafts[u.id]?.class_code ?? ""} onChange={(e) => setDrafts((d) => ({ ...d, [u.id]: { ...d[u.id], class_code: e.target.value } }))} style={{ padding: 4, width: 90, border: `1px solid ${COLORS.line}`, borderRadius: 4 }} />
+                  </td>
+                  <td style={{ padding: 8, whiteSpace: "nowrap" }}>{new Date(u.created_at).toLocaleDateString("fr-CA")}</td>
+                  <td style={{ padding: 8, whiteSpace: "nowrap" }}>
+                    <button onClick={() => save(u.id)} disabled={savingId === u.id} style={{ fontSize: 12, marginRight: 8, background: "none", border: "none", color: COLORS.ink, cursor: "pointer", textDecoration: "underline" }}>{savingId === u.id ? "…" : "Enregistrer"}</button>
+                    {u.id !== profile.id && <button onClick={() => remove(u.id, u.name)} style={{ fontSize: 12, background: "none", border: "none", color: COLORS.rust, cursor: "pointer", textDecoration: "underline" }}>Supprimer</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -280,23 +502,24 @@ function DevoirsTab({ supabase, profile }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [classCode, setClassCode] = useState(profile.class_code || "");
   const [subsByAssignment, setSubsByAssignment] = useState({});
   const [answerDraft, setAnswerDraft] = useState({});
   const [correcting, setCorrecting] = useState(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("assignments").select("*").order("created_at", { ascending: false });
+    const { data } = await applyClassFilter(supabase.from("assignments").select("*").order("created_at", { ascending: false }), profile);
     setAssignments(data || []);
     const { data: subs } = await supabase.from("submissions").select("*");
     const grouped = {};
     (subs || []).forEach((s) => { (grouped[s.assignment_id] ||= []).push(s); });
     setSubsByAssignment(grouped);
-  }, [supabase]);
+  }, [supabase, profile]);
   useEffect(() => { load(); }, [load]);
 
   const publish = async () => {
     if (!title.trim() || !instructions.trim()) return;
-    await supabase.from("assignments").insert({ owner_id: profile.id, title, instructions });
+    await supabase.from("assignments").insert({ owner_id: profile.id, title, instructions, class_code: classCode || null });
     setTitle(""); setInstructions(""); setOpen(false);
     load();
   };
@@ -333,6 +556,9 @@ function DevoirsTab({ supabase, profile }) {
         <div style={{ ...cardStyle, background: COLORS.paperDim, marginBottom: 16 }}>
           <F label="Titre"><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} /></F>
           <F label="Instructions"><textarea style={{ ...inputStyle, minHeight: 80 }} value={instructions} onChange={(e) => setInstructions(e.target.value)} /></F>
+          <F label="Code de classe (optionnel — laisser vide pour partager avec toutes les classes)">
+            <input style={inputStyle} value={classCode} onChange={(e) => setClassCode(e.target.value)} />
+          </F>
           <Btn onClick={publish}>Soumettre à la classe</Btn> <Btn ghost onClick={() => setOpen(false)}>Annuler</Btn>
         </div>
       )}
@@ -342,7 +568,7 @@ function DevoirsTab({ supabase, profile }) {
         const mySub = subs.find((s) => s.student_id === profile.id);
         return (
           <div key={a.id} style={{ ...cardStyle, marginBottom: 14 }}>
-            <strong>{a.title}</strong>
+            <strong>{a.title}{a.class_code && <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}> · {a.class_code}</span>}</strong>
             <p style={{ fontSize: 13, color: "#666" }}>{a.instructions}</p>
             <hr style={{ border: "none", borderTop: `1px dashed ${COLORS.line}`, margin: "12px 0" }} />
             {profile.role === "enseignant" ? (

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Le Carnet de route linguistique",
+  title: "Le Carnet de route linguistique FLS/CLIC",
   description: "Plateforme pour enseignants et apprenants — documents, activités, grilles NCLC et correction IA.",
 };
 

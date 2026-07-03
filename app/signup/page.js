@@ -78,7 +78,7 @@ export default function SignupPage() {
     <div style={{ minHeight: "100vh", background: COLORS.paper, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <form onSubmit={handleSubmit} style={{ background: "#fff", padding: 28, borderRadius: 12, width: 380, border: `1px solid ${COLORS.line}` }}>
         <h1 style={{ fontSize: 22, marginBottom: 4, color: COLORS.ink }}>Créer un compte</h1>
-        <p style={{ fontSize: 13, color: "#666", marginBottom: 20 }}>Le Carnet de route linguistique</p>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 20 }}>Le Carnet de route linguistique FLS/CLIC</p>
 
         <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Nom complet</label>
         <input style={{ ...inputStyle, marginBottom: 14 }} required value={name} onChange={(e) => setName(e.target.value)} />
