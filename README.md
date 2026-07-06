@@ -20,7 +20,18 @@ données, authentification) + API Claude (correction automatique). Suis les
 2. Ouvre le fichier `supabase/schema.sql` de ce projet, copie tout son
    contenu, colle-le dans l'éditeur
 3. Clique **Run** — toutes les tables et règles de sécurité sont créées
-   d'un coup
+   d'un coup (dans un schéma dédié `carnet`, pour ne jamais entrer en
+   conflit avec un autre projet qui utiliserait déjà le même projet
+   Supabase et des tables `public.profiles`, `public.assignments`, etc.)
+
+### Exposer le schéma "carnet" (obligatoire)
+1. Menu **Project Settings** → **Data API**
+2. Dans **Exposed schemas**, ajoute `carnet` à côté de `public`
+3. Clique **Save**
+
+⚠️ Sans cette étape, l'application ne pourra pas lire ni écrire dans
+la base de données (erreur "relation does not exist" ou 404 sur les
+requêtes).
 
 ### Récupérer tes clés
 1. Menu de gauche → **Project Settings** → **API**
@@ -104,14 +115,30 @@ redéploiera automatiquement la nouvelle version.
 
 ---
 
-## Ce qui reste à faire ensuite
+## Ce que contient cette base
 
 Cette base couvre les 4 modules demandés (documents, activités, grilles,
 devoirs corrigés par l'IA) avec une vraie authentification et une vraie base
-de données. Pour la suite, ouvre ce dossier avec **Claude Code** — dis-lui
-simplement ce que tu veux ajouter ou ajuster (ex. "ajoute l'upload de vrais
-fichiers PDF via Supabase Storage", "améliore le design du tableau de
-bord") et il pourra modifier directement les fichiers du projet.
+de données :
+
+- **Authentification** : comptes enseignant·e et apprenant·e séparés
+  (Supabase Auth), classe créée automatiquement à l'inscription enseignant·e
+  avec un code à partager, inscription apprenant·e par code de classe.
+- **Annonces** : l'enseignant·e publie des messages visibles par tous les
+  membres de la classe.
+- **Devoirs (activités)** : création de devoirs avec consigne, type,
+  date limite et niveau NCLC optionnel ; suivi des remises par apprenant·e.
+- **Correction par l'IA** : dès qu'un·e apprenant·e remet un texte, l'API
+  Claude (`lib/correction.js`) analyse les erreurs d'orthographe, de
+  grammaire et de style, évalue des critères pédagogiques, attribue un score
+  et rédige une rétroaction — le tout enregistré dans Supabase et visible par
+  l'apprenant·e et l'enseignant·e.
+- **Ressources (documents)** : liens partagés par l'enseignant·e, classés par
+  catégorie (site, vidéo, outil, podcast, document).
+
+Deux maquettes statiques (`index.html`, `generateur de grilles.html`) sont
+conservées à la racine du dépôt à titre de référence de design — elles ne
+font pas partie de l'application Next.js et n'ont pas besoin d'être servies.
 
 ### Idées de prochaines étapes
 - Upload de vrais fichiers PDF (via **Supabase Storage**, un espace de
@@ -119,3 +146,9 @@ bord") et il pourra modifier directement les fichiers du projet.
 - Domaine personnalisé (ex. `moncarnet.ca`) au lieu de `.vercel.app`
 - Vraie confirmation de courriel avant l'accès
 - Tableau de suivi des progrès par apprenant
+- Grilles NCLC détaillées et co-évaluation, inspirées de
+  `generateur de grilles.html`
+
+Pour la suite, ouvre ce dossier avec **Claude Code** — dis-lui simplement ce
+que tu veux ajouter ou ajuster et il pourra modifier directement les fichiers
+du projet.

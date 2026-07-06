@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClasseFLS — Espace d'apprentissage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bleu:    #1B3A6B;
+    --ciel:    #3B82F6;
+    --menthe:  #10B981;
+    --sable:   #F5F0E8;
+    --encre:   #1A1A2E;
+    --gris:    #6B7280;
+    --bordure: #E5E0D5;
+    --blanc:   #FFFFFF;
+    --rouge:   #EF4444;
+    --or:      #F59E0B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--sable);
+    color: var(--encre);
+    min-height: 100vh;
+  }
+
+  /* ─── ÉCRAN D'ACCUEIL ─── */
+  #ecran-accueil {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--bleu) 0%, #2563EB 60%, var(--ciel) 100%);
+  }
+
+  .logo-accueil {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--blanc);
+    letter-spacing: -0.03em;
+    margin-bottom: 0.3rem;
+  }
+
+  .logo-accueil span { color: #93C5FD; }
+
+  .tagline {
+    color: #BFDBFE;
+    font-size: 0.95rem;
+    font-weight: 300;
+    margin-bottom: 3rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .cartes-choix {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .carte-role {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 220px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    backdrop-filter: blur(8px);
+  }
+
+  .carte-role:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-4px);
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  .carte-role .icone {
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .carte-role h2 {
+    color: var(--blanc);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .carte-role p {
+    color: #BFDBFE;
+    font-size: 0.8rem;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  /* ─── FORMULAIRES ─── */
+  .ecran-form {
+    display: none;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--bleu) 0%, #1E40AF 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    flex-direction: column;
+  }
+
+  .form-carte {
+    background: var(--blanc);
+    border-radius: 20px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+  }
+
+  .form-carte h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--bleu);
+    margin-bottom: 0.3rem;
+  }
+
+  .form-carte p.sous-titre {
+    font-size: 0.85rem;
+    color: var(--gris);
+    margin-bottom: 2rem;
+  }
+
+  .champ {
+    margin-bottom: 1.2rem;
+  }
+
+  .champ label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+  }
+
+  .champ input, .champ select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--bordure);
+    border-radius: 10px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.9rem;
+    color: var(--encre);
+    background: var(--sable);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .champ input:focus, .champ select:focus {
+    border-color: var(--ciel);
+    background: var(--blanc);
+  }
+
+  .btn-principal {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--bleu);
+    color: var(--blanc);
+    border: none;
+    border-radius: 10px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 0.5rem;
+  }
+
+  .btn-principal:hover { background: #162E57; transform: translateY(-1px); }
+
+  .lien-retour {
+    color: #BFDBFE;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 1.2rem;
+    text-decoration: underline;
+  }
+
+  .code-classe {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--ciel);
+    letter-spacing: 0.15em;
+    background: #EFF6FF;
+    border: 2px dashed #BFDBFE;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    margin: 1rem 0;
+  }
+
+  /* ─── TABLEAU DE BORD ENSEIGNANT ─── */
+  #tableau-enseignant, #tableau-apprenant {
+    display: none;
+    min-height: 100vh;
+  }
+
+  .barre-nav {
+    background: var(--bleu);
+    color: var(--blanc);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+
+  .nav-logo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-logo span { color: #93C5FD; }
+
+  .nav-info {
+    font-size: 0.8rem;
+    color: #BFDBFE;
+    text-align: right;
+  }
+
+  .nav-info strong {
+    display: block;
+    color: var(--blanc);
+    font-size: 0.9rem;
+  }
+
+  .nav-code {
+    font-family: 'IBM Plex Mono', monospace;
+    background: rgba(255,255,255,0.15);
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .nav-code:hover { background: rgba(255,255,255,0.25); }
+
+  .contenu-principal {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .section-titre {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--bleu);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* ─── ONGLETS ─── */
+  .onglets {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .onglet {
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s;
+    background: var(--blanc);
+    color: var(--gris);
+    border-color: var(--bordure);
+  }
+
+  .onglet.actif {
+    background: var(--bleu);
+    color: var(--blanc);
+    border-color: var(--bleu);
+  }
+
+  .onglet:hover:not(.actif) {
+    border-color: var(--ciel);
+    color: var(--ciel);
+  }
+
+  /* ─── PANNEAUX DE CONTENU ─── */
+  .panneau { display: none; }
+  .panneau.actif { display: block; }
+
+  /* ─── GRILLE DE CARTES ─── */
+  .grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.2rem;
+  }
+
+  .carte {
+    background: var(--blanc);
+    border: 1.5px solid var(--bordure);
+    border-radius: 14px;
+    padding: 1.5rem;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .carte:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+
+  .carte-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+  }
+
+  .carte h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--encre);
+  }
+
+  .badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-vert  { background: #D1FAE5; color: #065F46; }
+  .badge-bleu  { background: #DBEAFE; color: #1E40AF; }
+  .badge-or    { background: #FEF3C7; color: #92400E; }
+  .badge-rouge { background: #FEE2E2; color: #991B1B; }
+
+  .carte p {
+    font-size: 0.85rem;
+    color: var(--gris);
+    line-height: 1.6;
+  }
+
+  .carte-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .btn-sm {
+    padding: 0.4rem 0.9rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid;
+    font-family: 'Sora', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-primaire { background: var(--bleu); color: var(--blanc); border-color: var(--bleu); }
+  .btn-primaire:hover { background: #162E57; }
+  .btn-secondaire { background: transparent; color: var(--bleu); border-color: #BFDBFE; }
+  .btn-secondaire:hover { background: #EFF6FF; }
+  .btn-danger { background: transparent; color: var(--rouge); border-color: #FECACA; }
+  .btn-danger:hover { background: #FEE2E2; }
+  .btn-vert { background: var(--menthe); color: var(--blanc); border-color: var(--menthe); }
+
+  /* ─── FORMULAIRE DE DEVOIR ─── */
+  .formulaire-section {
+    background: var(--blanc);
+    border: 1.5px solid var(--bordure);
+    border-radius: 14px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .formulaire-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--bleu);
+    margin-bottom: 1.2rem;
+  }
+
+  .rangee { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .rangee .champ { flex: 1; min-width: 200px; }
+
+  textarea.champ-texte {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--bordure);
+    border-radius: 10px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.9rem;
+    color: var(--encre);
+    background: var(--sable);
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea.champ-texte:focus {
+    border-color: var(--ciel);
+    background: var(--blanc);
+  }
+
+  /* ─── TABLEAU APPRENANTS ─── */
+  .tableau-apprenants {
+    background: var(--blanc);
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1.5px solid var(--bordure);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    background: var(--bleu);
+    color: var(--blanc);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.9rem 1.2rem;
+    text-align: left;
+  }
+
+  td {
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    color: var(--encre);
+    border-bottom: 1px solid var(--bordure);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F8FAFC; }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ciel), var(--bleu));
+    color: var(--blanc);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 0.6rem;
+    vertical-align: middle;
+  }
+
+  /* ─── ANNONCES ─── */
+  .annonce {
+    background: var(--blanc);
+    border-left: 4px solid var(--ciel);
+    border-radius: 0 12px 12px 0;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1rem;
+    border: 1.5px solid var(--bordure);
+    border-left: 4px solid var(--ciel);
+  }
+
+  .annonce-meta {
+    font-size: 0.78rem;
+    color: var(--gris);
+    margin-bottom: 0.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .annonce h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+  }
+
+  .annonce p {
+    font-size: 0.85rem;
+    color: var(--gris);
+    line-height: 1.6;
+  }
+
+  /* ─── PROGRESSION APPRENANT ─── */
+  .barre-progression {
+    background: #E5E7EB;
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 0.4rem;
+  }
+
+  .barre-remplie {
+    height: 100%;
+    border-radius: 20px;
+    background: linear-gradient(90deg, var(--ciel), var(--menthe));
+    transition: width 0.6s ease;
+  }
+
+  /* ─── MODALE ─── */
+  .modale-fond {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .modale-fond.ouverte { display: flex; }
+
+  .modale {
+    background: var(--blanc);
+    border-radius: 18px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    animation: entree 0.25s ease;
+  }
+
+  @keyframes entree {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .modale h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--bleu);
+    margin-bottom: 1.5rem;
+  }
+
+  .modale-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.7rem;
+    margin-top: 1.5rem;
+  }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--encre);
+    color: var(--blanc);
+    padding: 0.85rem 1.5rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    z-index: 300;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* ─── VIDE ─── */
+  .etat-vide {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--gris);
+  }
+
+  .etat-vide .grande-icone { font-size: 3rem; margin-bottom: 1rem; }
+  .etat-vide p { font-size: 0.9rem; line-height: 1.6; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 640px) {
+    .barre-nav { padding: 0 1rem; }
+    .contenu-principal { padding: 1.2rem 1rem; }
+    th, td { padding: 0.7rem 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ ACCUEIL ═══════════════ -->
+<div id="ecran-accueil">
+  <div class="logo-accueil">Classe<span>FLS</span></div>
+  <div class="tagline">Enseignement du français langue seconde</div>
+  <div class="cartes-choix">
+    <div class="carte-role" onclick="afficherEcran('form-enseignant')">
+      <div class="icone">👩‍🏫</div>
+      <h2>Enseignant·e</h2>
+      <p>Créez votre classe, publiez des devoirs et suivez vos apprenants</p>
+    </div>
+    <div class="carte-role" onclick="afficherEcran('form-apprenant')">
+      <div class="icone">📚</div>
+      <h2>Apprenant·e</h2>
+      <p>Rejoignez votre classe avec le code fourni par votre enseignant·e</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FORM ENSEIGNANT ═══════════════ -->
+<div id="form-enseignant" class="ecran-form">
+  <div class="form-carte">
+    <h2>Créer une classe</h2>
+    <p class="sous-titre">Aucun compte requis — partagez le code avec vos apprenants</p>
+    <div class="champ">
+      <label>Votre prénom et nom</label>
+      <input type="text" id="ens-nom" placeholder="ex. Marie Tremblay">
+    </div>
+    <div class="champ">
+      <label>Nom de la classe</label>
+      <input type="text" id="ens-classe" placeholder="ex. FLS intermédiaire — automne 2025">
+    </div>
+    <div class="champ">
+      <label>Niveau</label>
+      <select id="ens-niveau">
+        <option value="">Choisir un niveau</option>
+        <option>Débutant (A1–A2)</option>
+        <option>Intermédiaire (B1–B2)</option>
+        <option>Avancé (C1–C2)</option>
+        <option>Mixte</option>
+      </select>
+    </div>
+    <button class="btn-principal" onclick="creerClasse()">Créer ma classe →</button>
+  </div>
+  <span class="lien-retour" onclick="afficherEcran('ecran-accueil')">← Retour</span>
+</div>
+
+<!-- ═══════════════ FORM APPRENANT ═══════════════ -->
+<div id="form-apprenant" class="ecran-form">
+  <div class="form-carte">
+    <h2>Rejoindre une classe</h2>
+    <p class="sous-titre">Entrez le code donné par votre enseignant·e</p>
+    <div class="champ">
+      <label>Votre prénom et nom</label>
+      <input type="text" id="app-nom" placeholder="ex. João Silva">
+    </div>
+    <div class="champ">
+      <label>Code de classe</label>
+      <input type="text" id="app-code" placeholder="ex. FLS-4872" style="font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase;">
+    </div>
+    <button class="btn-principal" onclick="rejoindreClasse()">Rejoindre →</button>
+  </div>
+  <span class="lien-retour" onclick="afficherEcran('ecran-accueil')">← Retour</span>
+</div>
+
+<!-- ═══════════════ TABLEAU ENSEIGNANT ═══════════════ -->
+<div id="tableau-enseignant">
+  <nav class="barre-nav">
+    <div class="nav-logo">Classe<span>FLS</span></div>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <div class="nav-code" onclick="copierCode()" title="Cliquez pour copier">
+        📋 <span id="nav-code-affiché"></span>
+      </div>
+      <div class="nav-info">
+        <strong id="nav-ens-nom"></strong>
+        <span id="nav-ens-classe"></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="contenu-principal">
+    <div class="onglets">
+      <div class="onglet actif" onclick="changerOnglet('ens', 'annonces', this)">📢 Annonces</div>
+      <div class="onglet" onclick="changerOnglet('ens', 'devoirs', this)">📝 Devoirs</div>
+      <div class="onglet" onclick="changerOnglet('ens', 'apprenants', this)">👥 Apprenants</div>
+      <div class="onglet" onclick="changerOnglet('ens', 'ressources', this)">📁 Ressources</div>
+    </div>
+
+    <!-- Annonces -->
+    <div id="ens-annonces" class="panneau actif">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+        <div class="section-titre">📢 Annonces</div>
+        <button class="btn-sm btn-primaire" onclick="ouvrirModale('modale-annonce')">+ Nouvelle annonce</button>
+      </div>
+      <div id="liste-annonces">
+        <div class="annonce">
+          <div class="annonce-meta">Aujourd'hui · Marie Tremblay</div>
+          <h4>Bienvenue dans ClasseFLS !</h4>
+          <p>Partagez le code de classe avec vos apprenants pour qu'ils puissent vous rejoindre. Le code apparaît en haut à droite de votre écran.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devoirs -->
+    <div id="ens-devoirs" class="panneau">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+        <div class="section-titre">📝 Devoirs</div>
+        <button class="btn-sm btn-primaire" onclick="ouvrirModale('modale-devoir')">+ Créer un devoir</button>
+      </div>
+      <div id="liste-devoirs" class="grille">
+        <div class="etat-vide">
+          <div class="grande-icone">📝</div>
+          <p>Aucun devoir pour l'instant.<br>Créez votre premier devoir en cliquant sur le bouton ci-dessus.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Apprenants -->
+    <div id="ens-apprenants" class="panneau">
+      <div class="section-titre">👥 Apprenants inscrits</div>
+      <div class="tableau-apprenants">
+        <table>
+          <thead>
+            <tr>
+              <th>Apprenant</th>
+              <th>Inscrit le</th>
+              <th>Devoirs remis</th>
+              <th>Progression</th>
+            </tr>
+          </thead>
+          <tbody id="corps-apprenants">
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--gris); padding:3rem;">
+                En attente d'apprenants — partagez le code <strong id="code-dans-tableau"></strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ressources -->
+    <div id="ens-ressources" class="panneau">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+        <div class="section-titre">📁 Ressources partagées</div>
+        <button class="btn-sm btn-primaire" onclick="ouvrirModale('modale-ressource')">+ Ajouter un lien</button>
+      </div>
+      <div id="liste-ressources" class="grille">
+        <div class="carte">
+          <div class="carte-entete">
+            <h3>🔗 TV5MONDE — Apprendre le français</h3>
+            <span class="badge badge-bleu">Site</span>
+          </div>
+          <p>Exercices interactifs, vidéos et fiches pédagogiques pour tous les niveaux.</p>
+          <div class="carte-actions">
+            <a href="https://apprendre.tv5monde.com" target="_blank" class="btn-sm btn-primaire">Ouvrir →</a>
+          </div>
+        </div>
+        <div class="carte">
+          <div class="carte-entete">
+            <h3>🔗 Le conjugueur — Bescherelle</h3>
+            <span class="badge badge-vert">Outil</span>
+          </div>
+          <p>Conjugaison complète de tous les verbes français avec explications grammaticales.</p>
+          <div class="carte-actions">
+            <a href="https://leconjugueur.lefigaro.fr" target="_blank" class="btn-sm btn-primaire">Ouvrir →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TABLEAU APPRENANT ═══════════════ -->
+<div id="tableau-apprenant">
+  <nav class="barre-nav">
+    <div class="nav-logo">Classe<span>FLS</span></div>
+    <div class="nav-info">
+      <strong id="nav-app-nom"></strong>
+      <span id="nav-app-classe"></span>
+    </div>
+  </nav>
+
+  <div class="contenu-principal">
+    <div class="onglets">
+      <div class="onglet actif" onclick="changerOnglet('app', 'accueil', this)">🏠 Accueil</div>
+      <div class="onglet" onclick="changerOnglet('app', 'devoirs', this)">📝 Mes devoirs</div>
+      <div class="onglet" onclick="changerOnglet('app', 'ressources', this)">📁 Ressources</div>
+    </div>
+
+    <!-- Accueil apprenant -->
+    <div id="app-accueil" class="panneau actif">
+      <div class="section-titre">📢 Annonces de la classe</div>
+      <div id="app-annonces-affichage">
+        <div class="annonce">
+          <div class="annonce-meta">Aujourd'hui</div>
+          <h4>Bienvenue dans votre classe FLS !</h4>
+          <p>Votre enseignant·e publiera ici les annonces importantes. Consultez l'onglet <strong>Mes devoirs</strong> pour voir vos tâches à accomplir.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devoirs apprenant -->
+    <div id="app-devoirs" class="panneau">
+      <div class="section-titre">📝 Mes devoirs</div>
+      <div id="app-liste-devoirs" class="grille">
+        <div class="etat-vide">
+          <div class="grande-icone">✅</div>
+          <p>Aucun devoir pour l'instant.<br>Votre enseignant·e en publiera bientôt.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ressources apprenant -->
+    <div id="app-ressources" class="panneau">
+      <div class="section-titre">📁 Ressources</div>
+      <div id="app-liste-ressources" class="grille">
+        <div class="carte">
+          <div class="carte-entete"><h3>🔗 TV5MONDE — Apprendre le français</h3><span class="badge badge-bleu">Site</span></div>
+          <p>Exercices interactifs, vidéos et fiches pédagogiques pour tous les niveaux.</p>
+          <div class="carte-actions"><a href="https://apprendre.tv5monde.com" target="_blank" class="btn-sm btn-primaire">Ouvrir →</a></div>
+        </div>
+        <div class="carte">
+          <div class="carte-entete"><h3>🔗 Le conjugueur — Bescherelle</h3><span class="badge badge-vert">Outil</span></div>
+          <p>Conjugaison complète de tous les verbes français avec explications grammaticales.</p>
+          <div class="carte-actions"><a href="https://leconjugueur.lefigaro.fr" target="_blank" class="btn-sm btn-primaire">Ouvrir →</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODALES ═══════════════ -->
+
+<!-- Modale annonce -->
+<div id="modale-annonce" class="modale-fond">
+  <div class="modale">
+    <h3>📢 Nouvelle annonce</h3>
+    <div class="champ">
+      <label>Titre</label>
+      <input type="text" id="annonce-titre" placeholder="ex. Rappel : cours annulé vendredi">
+    </div>
+    <div class="champ">
+      <label>Message</label>
+      <textarea class="champ-texte" id="annonce-corps" placeholder="Écrivez votre message ici…"></textarea>
+    </div>
+    <div class="modale-actions">
+      <button class="btn-sm btn-secondaire" onclick="fermerModale('modale-annonce')">Annuler</button>
+      <button class="btn-sm btn-primaire" onclick="publierAnnonce()">Publier</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale devoir -->
+<div id="modale-devoir" class="modale-fond">
+  <div class="modale">
+    <h3>📝 Créer un devoir</h3>
+    <div class="champ">
+      <label>Titre du devoir</label>
+      <input type="text" id="devoir-titre" placeholder="ex. Rédaction — ma ville idéale">
+    </div>
+    <div class="champ">
+      <label>Consigne</label>
+      <textarea class="champ-texte" id="devoir-consigne" placeholder="Décrivez la tâche à accomplir…"></textarea>
+    </div>
+    <div class="rangee">
+      <div class="champ">
+        <label>Date limite</label>
+        <input type="date" id="devoir-date">
+      </div>
+      <div class="champ">
+        <label>Type</label>
+        <select id="devoir-type">
+          <option>Rédaction</option>
+          <option>Exercice de grammaire</option>
+          <option>Compréhension orale</option>
+          <option>Vocabulaire</option>
+          <option>Présentation orale</option>
+          <option>Lecture</option>
+          <option>Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="modale-actions">
+      <button class="btn-sm btn-secondaire" onclick="fermerModale('modale-devoir')">Annuler</button>
+      <button class="btn-sm btn-primaire" onclick="publierDevoir()">Publier le devoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale ressource -->
+<div id="modale-ressource" class="modale-fond">
+  <div class="modale">
+    <h3>📁 Ajouter une ressource</h3>
+    <div class="champ">
+      <label>Titre</label>
+      <input type="text" id="res-titre" placeholder="ex. Exercices de conjugaison">
+    </div>
+    <div class="champ">
+      <label>URL</label>
+      <input type="url" id="res-url" placeholder="https://…">
+    </div>
+    <div class="champ">
+      <label>Description courte</label>
+      <input type="text" id="res-desc" placeholder="ex. 20 exercices sur les temps du passé">
+    </div>
+    <div class="champ">
+      <label>Catégorie</label>
+      <select id="res-cat">
+        <option>Site</option>
+        <option>Vidéo</option>
+        <option>Outil</option>
+        <option>Podcast</option>
+        <option>Document</option>
+      </select>
+    </div>
+    <div class="modale-actions">
+      <button class="btn-sm btn-secondaire" onclick="fermerModale('modale-ressource')">Annuler</button>
+      <button class="btn-sm btn-primaire" onclick="ajouterRessource()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale remise devoir -->
+<div id="modale-remise" class="modale-fond">
+  <div class="modale">
+    <h3 id="remise-titre-devoir">📤 Remettre le devoir</h3>
+    <div class="champ">
+      <label>Votre travail (texte ou lien)</label>
+      <textarea class="champ-texte" id="remise-texte" placeholder="Collez votre texte, un lien Google Docs, ou un lien de partage…" style="min-height:140px;"></textarea>
+    </div>
+    <div class="modale-actions">
+      <button class="btn-sm btn-secondaire" onclick="fermerModale('modale-remise')">Annuler</button>
+      <button class="btn-sm btn-vert" onclick="remettreTravail()">✔ Remettre</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// ═══════════════ ÉTAT GLOBAL ═══════════════
+let etat = {
+  role: null,
+  nom: null,
+  classe: null,
+  niveau: null,
+  codeClasse: null,
+  devoirs: [],
+  annonces: [],
+  ressources: [],
+  apprenants: [],
+  devoirCourant: null
+};
+
+// ─── NAVIGATION ───
+function afficherEcran(id) {
+  document.querySelectorAll('#ecran-accueil, .ecran-form, #tableau-enseignant, #tableau-apprenant')
+    .forEach(el => { el.style.display = 'none'; });
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = el.classList.contains('ecran-form') ? 'flex' : 'flex';
+    if (id === 'ecran-accueil') el.style.display = 'flex';
+    if (id === 'tableau-enseignant' || id === 'tableau-apprenant') el.style.display = 'block';
+  }
+}
+
+// ─── GÉNÉRATION CODE ───
+function genererCode() {
+  const lettres = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const chiffres = '23456789';
+  let code = 'FLS-';
+  for (let i = 0; i < 4; i++) code += chiffres[Math.floor(Math.random() * chiffres.length)];
+  return code;
+}
+
+// ─── CRÉER CLASSE ───
+function creerClasse() {
+  const nom = document.getElementById('ens-nom').value.trim();
+  const classe = document.getElementById('ens-classe').value.trim();
+  const niveau = document.getElementById('ens-niveau').value;
+  if (!nom || !classe || !niveau) { afficherToast('⚠️ Veuillez remplir tous les champs.'); return; }
+
+  etat = { ...etat, role: 'enseignant', nom, classe, niveau, codeClasse: genererCode(), devoirs: [], annonces: [], ressources: [], apprenants: [] };
+
+  document.getElementById('nav-ens-nom').textContent = nom;
+  document.getElementById('nav-ens-classe').textContent = classe + ' · ' + niveau;
+  document.getElementById('nav-code-affiché').textContent = etat.codeClasse;
+  document.getElementById('code-dans-tableau').textContent = etat.codeClasse;
+
+  afficherEcran('tableau-enseignant');
+  afficherToast('✅ Classe créée ! Code : ' + etat.codeClasse);
+}
+
+// ─── REJOINDRE CLASSE ───
+function rejoindreClasse() {
+  const nom = document.getElementById('app-nom').value.trim();
+  const code = document.getElementById('app-code').value.trim().toUpperCase();
+  if (!nom || !code) { afficherToast('⚠️ Veuillez remplir tous les champs.'); return; }
+  if (!code.startsWith('FLS-')) { afficherToast('❌ Code invalide. Format : FLS-XXXX'); return; }
+
+  etat = { ...etat, role: 'apprenant', nom, codeClasse: code, classe: 'Classe ' + code };
+
+  // Simuler inscription dans la classe (demo)
+  const initiales = nom.split(' ').map(m => m[0]).join('').toUpperCase().slice(0,2);
+  ajouterApprenantTableau(nom, initiales);
+
+  document.getElementById('nav-app-nom').textContent = nom;
+  document.getElementById('nav-app-classe').textContent = 'Classe ' + code;
+
+  afficherEcran('tableau-apprenant');
+  afficherToast('👋 Bienvenue, ' + nom.split(' ')[0] + ' !');
+}
+
+function ajouterApprenantTableau(nom, initiales) {
+  const tbody = document.getElementById('corps-apprenants');
+  if (tbody.querySelector('[colspan]')) tbody.innerHTML = '';
+  const tr = document.createElement('tr');
+  const auj = new Date().toLocaleDateString('fr-CA');
+  tr.innerHTML = `
+    <td><span class="avatar">${initiales}</span>${nom}</td>
+    <td>${auj}</td>
+    <td><span class="badge badge-or">0 / ${etat.devoirs.length}</span></td>
+    <td>
+      <div style="font-size:0.78rem;color:var(--gris);margin-bottom:2px;">0 %</div>
+      <div class="barre-progression"><div class="barre-remplie" style="width:0%"></div></div>
+    </td>`;
+  tbody.appendChild(tr);
+}
+
+// ─── ONGLETS ───
+function changerOnglet(prefixe, id, btn) {
+  document.querySelectorAll(`#tableau-${prefixe === 'ens' ? 'enseignant' : 'apprenant'} .onglet`)
+    .forEach(o => o.classList.remove('actif'));
+  document.querySelectorAll(`#tableau-${prefixe === 'ens' ? 'enseignant' : 'apprenant'} .panneau`)
+    .forEach(p => p.classList.remove('actif'));
+  btn.classList.add('actif');
+  const panneau = document.getElementById(`${prefixe}-${id}`);
+  if (panneau) panneau.classList.add('actif');
+}
+
+// ─── MODALES ───
+function ouvrirModale(id) {
+  document.getElementById(id).classList.add('ouverte');
+}
+
+function fermerModale(id) {
+  document.getElementById(id).classList.remove('ouverte');
+}
+
+document.querySelectorAll('.modale-fond').forEach(fond => {
+  fond.addEventListener('click', e => { if (e.target === fond) fond.classList.remove('ouverte'); });
+});
+
+// ─── ANNONCES ───
+function publierAnnonce() {
+  const titre = document.getElementById('annonce-titre').value.trim();
+  const corps = document.getElementById('annonce-corps').value.trim();
+  if (!titre || !corps) { afficherToast('⚠️ Remplissez le titre et le message.'); return; }
+
+  const auj = new Date().toLocaleDateString('fr-CA', { day:'numeric', month:'long' });
+  const html = `<div class="annonce">
+    <div class="annonce-meta">${auj} · ${etat.nom}</div>
+    <h4>${titre}</h4>
+    <p>${corps}</p>
+  </div>`;
+
+  document.getElementById('liste-annonces').insertAdjacentHTML('afterbegin', html);
+  document.getElementById('annonce-titre').value = '';
+  document.getElementById('annonce-corps').value = '';
+  fermerModale('modale-annonce');
+  afficherToast('📢 Annonce publiée !');
+}
+
+// ─── DEVOIRS ───
+function publierDevoir() {
+  const titre = document.getElementById('devoir-titre').value.trim();
+  const consigne = document.getElementById('devoir-consigne').value.trim();
+  const date = document.getElementById('devoir-date').value;
+  const type = document.getElementById('devoir-type').value;
+  if (!titre || !consigne) { afficherToast('⚠️ Titre et consigne requis.'); return; }
+
+  const id = 'dev-' + Date.now();
+  const devoir = { id, titre, consigne, date, type };
+  etat.devoirs.push(devoir);
+
+  // Affichage enseignant
+  const conteneur = document.getElementById('liste-devoirs');
+  if (conteneur.querySelector('.etat-vide')) conteneur.innerHTML = '';
+
+  const dateStr = date ? new Date(date + 'T12:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }) : 'Aucune date limite';
+
+  conteneur.insertAdjacentHTML('afterbegin', `
+    <div class="carte" id="ens-${id}">
+      <div class="carte-entete">
+        <h3>${titre}</h3>
+        <span class="badge badge-bleu">${type}</span>
+      </div>
+      <p>${consigne}</p>
+      <p style="margin-top:0.6rem;font-size:0.78rem;color:var(--gris);">📅 ${dateStr}</p>
+      <div class="carte-actions">
+        <button class="btn-sm btn-danger" onclick="supprimerDevoir('${id}')">Supprimer</button>
+      </div>
+    </div>`);
+
+  // Affichage apprenant (simulation)
+  const conteneurApp = document.getElementById('app-liste-devoirs');
+  if (conteneurApp.querySelector('.etat-vide')) conteneurApp.innerHTML = '';
+  conteneurApp.insertAdjacentHTML('afterbegin', `
+    <div class="carte" id="app-${id}">
+      <div class="carte-entete">
+        <h3>${titre}</h3>
+        <span class="badge badge-or">À remettre</span>
+      </div>
+      <p>${consigne}</p>
+      <p style="margin-top:0.6rem;font-size:0.78rem;color:var(--gris);">📅 ${dateStr}</p>
+      <div class="carte-actions">
+        <button class="btn-sm btn-vert" onclick="ouvrirRemise('${id}', '${titre}')">📤 Remettre</button>
+      </div>
+    </div>`);
+
+  document.getElementById('devoir-titre').value = '';
+  document.getElementById('devoir-consigne').value = '';
+  document.getElementById('devoir-date').value = '';
+  fermerModale('modale-devoir');
+  afficherToast('📝 Devoir publié !');
+}
+
+function supprimerDevoir(id) {
+  const carte = document.getElementById('ens-' + id);
+  const carteApp = document.getElementById('app-' + id);
+  if (carte) carte.remove();
+  if (carteApp) carteApp.remove();
+  etat.devoirs = etat.devoirs.filter(d => d.id !== id);
+  if (document.getElementById('liste-devoirs').children.length === 0) {
+    document.getElementById('liste-devoirs').innerHTML = `<div class="etat-vide"><div class="grande-icone">📝</div><p>Aucun devoir pour l'instant.<br>Créez votre premier devoir en cliquant sur le bouton ci-dessus.</p></div>`;
+  }
+  afficherToast('🗑️ Devoir supprimé.');
+}
+
+// ─── REMISE DEVOIR ───
+function ouvrirRemise(id, titre) {
+  etat.devoirCourant = id;
+  document.getElementById('remise-titre-devoir').textContent = '📤 Remettre : ' + titre;
+  document.getElementById('remise-texte').value = '';
+  ouvrirModale('modale-remise');
+}
+
+function remettreTravail() {
+  const texte = document.getElementById('remise-texte').value.trim();
+  if (!texte) { afficherToast('⚠️ Entrez votre travail avant de remettre.'); return; }
+  const carte = document.getElementById('app-' + etat.devoirCourant);
+  if (carte) {
+    carte.querySelector('.badge').className = 'badge badge-vert';
+    carte.querySelector('.badge').textContent = 'Remis ✓';
+    carte.querySelector('.carte-actions').innerHTML = '<span style="font-size:0.8rem;color:var(--menthe);font-weight:600;">✅ Travail remis avec succès</span>';
+  }
+  fermerModale('modale-remise');
+  afficherToast('✅ Travail remis !');
+}
+
+// ─── RESSOURCES ───
+function ajouterRessource() {
+  const titre = document.getElementById('res-titre').value.trim();
+  const url = document.getElementById('res-url').value.trim();
+  const desc = document.getElementById('res-desc').value.trim();
+  const cat = document.getElementById('res-cat').value;
+  if (!titre || !url) { afficherToast('⚠️ Titre et URL requis.'); return; }
+
+  const badgeClass = { 'Site':'badge-bleu','Vidéo':'badge-rouge','Outil':'badge-vert','Podcast':'badge-or','Document':'badge-bleu' }[cat] || 'badge-bleu';
+
+  const html = `<div class="carte">
+    <div class="carte-entete"><h3>🔗 ${titre}</h3><span class="badge ${badgeClass}">${cat}</span></div>
+    <p>${desc || 'Ressource pédagogique'}</p>
+    <div class="carte-actions"><a href="${url}" target="_blank" class="btn-sm btn-primaire">Ouvrir →</a></div>
+  </div>`;
+
+  document.getElementById('liste-ressources').insertAdjacentHTML('afterbegin', html);
+  document.getElementById('app-liste-ressources').insertAdjacentHTML('afterbegin', html);
+
+  ['res-titre','res-url','res-desc'].forEach(id => document.getElementById(id).value = '');
+  fermerModale('modale-ressource');
+  afficherToast('📁 Ressource ajoutée !');
+}
+
+// ─── CODE ───
+function copierCode() {
+  navigator.clipboard?.writeText(etat.codeClasse).catch(() => {});
+  afficherToast('📋 Code copié : ' + etat.codeClasse);
+}
+
+// ─── TOAST ───
+function afficherToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
+// ─── INIT ───
+afficherEcran('ecran-accueil');
+</script>
+</body>
+</html>
