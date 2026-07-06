@@ -1,121 +1,392 @@
-# Le Carnet de route linguistique — guide pas à pas
+-- ═══════════════════════════════════════════════════════════════
+-- Le Carnet de route linguistique — schéma Supabase
+-- Copiez tout ce fichier dans SQL Editor > New query, puis Run.
+--
+-- Toutes les tables vivent dans le schéma "carnet" (et non "public")
+-- pour coexister sans collision avec d'autres projets déjà présents
+-- dans la même base de données Supabase.
+--
+-- ⚠️ Étape supplémentaire obligatoire après avoir exécuté ce script :
+-- Dashboard > Project Settings > Data API > Exposed schemas
+-- → ajoutez "carnet" à la liste (à côté de "public"), puis Save.
+-- Sans cette étape, l'application ne pourra pas accéder aux tables.
+-- ═══════════════════════════════════════════════════════════════
 
-Ce projet est une base **réelle et fonctionnelle** : Next.js + Supabase (base de
-données, authentification) + API Claude (correction automatique). Suis les
-étapes dans l'ordre — chacune prend quelques minutes.
+create schema if not exists carnet;
 
----
+grant usage on schema carnet to authenticated, anon;
+alter default privileges in schema carnet grant all on tables to authenticated, anon;
+alter default privileges in schema carnet grant all on sequences to authenticated, anon;
+alter default privileges in schema carnet grant execute on functions to authenticated, anon;
 
-## Étape 1 — Créer le projet Supabase
+-- ─── PROFILS ───
+-- Complète auth.users avec un nom affiché et un rôle.
+create table carnet.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text not null,
+  role text not null check (role in ('enseignant', 'apprenant')),
+  created_at timestamptz not null default now()
+);
 
-1. Va sur https://supabase.com, connecte-toi (compte déjà créé ✅)
-2. Clique **New project**
-3. Donne-lui un nom (ex. `carnet-linguistique`), choisis un mot de passe pour
-   la base de données (note-le quelque part), choisis une région proche de
-   tes utilisateurs (ex. Canada Central)
-4. Attends 1-2 minutes que le projet soit prêt
+grant all on carnet.profiles to authenticated, anon;
+alter table carnet.profiles enable row level security;
 
-### Créer les tables
-1. Dans le menu de gauche, clique **SQL Editor** → **New query**
-2. Ouvre le fichier `supabase/schema.sql` de ce projet, copie tout son
-   contenu, colle-le dans l'éditeur
-3. Clique **Run** — toutes les tables et règles de sécurité sont créées
-   d'un coup
+create policy "Profils visibles par tous les utilisateurs connectés"
+  on carnet.profiles for select
+  to authenticated
+  using (true);
 
-### Récupérer tes clés
-1. Menu de gauche → **Project Settings** → **API**
-2. Note deux valeurs : **Project URL** et **anon public key**
+create policy "Un utilisateur modifie son propre profil"
+  on carnet.profiles for update
+  to authenticated
+  using (id = auth.uid());
 
-### Désactiver la confirmation par courriel (optionnel, pour tester plus vite)
-Menu **Authentication** → **Providers** → **Email** → décoche *Confirm
-email* si tu veux que les comptes soient actifs immédiatement (à réactiver
-avant un vrai lancement public).
+-- Crée automatiquement un profil à l'inscription, à partir des métadonnées
+-- passées lors du signUp (full_name, role).
+create function carnet.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = carnet
+as $$
+begin
+  insert into carnet.profiles (id, full_name, role)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', 'Sans nom'),
+    coalesce(new.raw_user_meta_data->>'role', 'apprenant')
+  );
+  return new;
+end;
+$$;
 
----
+create trigger on_auth_user_created_carnet
+  after insert on auth.users
+  for each row execute function carnet.handle_new_user();
 
-## Étape 2 — Récupérer ta clé API Claude
+-- ─── CLASSES ───
+create table carnet.classes (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references carnet.profiles(id) on delete cascade,
+  name text not null,
+  level text not null,
+  code text not null unique,
+  created_at timestamptz not null default now()
+);
 
-1. Va sur https://console.anthropic.com → **API Keys** → **Create Key**
-2. Copie la clé (elle ne sera plus jamais affichée en entier)
+grant all on carnet.classes to authenticated, anon;
+alter table carnet.classes enable row level security;
 
----
+-- ─── MEMBRES DE CLASSE ───
+-- (créée avant les fonctions utilitaires ci-dessous, qui la référencent)
+create table carnet.class_members (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references carnet.classes(id) on delete cascade,
+  student_id uuid not null references carnet.profiles(id) on delete cascade,
+  joined_at timestamptz not null default now(),
+  unique (class_id, student_id)
+);
 
-## Étape 3 — Configurer le projet sur ton ordinateur
+grant all on carnet.class_members to authenticated, anon;
+alter table carnet.class_members enable row level security;
 
-1. Ouvre un terminal dans le dossier de ce projet
-2. Installe les dépendances :
-   ```
-   npm install
-   ```
-3. Copie le fichier d'exemple :
-   ```
-   cp .env.local.example .env.local
-   ```
-   (sur Windows : `copy .env.local.example .env.local`)
-4. Ouvre `.env.local` et remplace les trois valeurs par les tiennes
-   (Supabase URL, Supabase anon key, clé API Anthropic)
+create function carnet.is_class_teacher(p_class_id uuid)
+returns boolean
+language sql
+security definer set search_path = carnet
+stable
+as $$
+  select exists (
+    select 1 from carnet.classes
+    where id = p_class_id and teacher_id = auth.uid()
+  );
+$$;
 
----
+create function carnet.is_class_member(p_class_id uuid)
+returns boolean
+language sql
+security definer set search_path = carnet
+stable
+as $$
+  select exists (
+    select 1 from carnet.class_members
+    where class_id = p_class_id and student_id = auth.uid()
+  );
+$$;
 
-## Étape 4 — Lancer le site en local
+create policy "L'enseignant gère ses classes"
+  on carnet.classes for all
+  to authenticated
+  using (teacher_id = auth.uid())
+  with check (teacher_id = auth.uid());
 
-```
-npm run dev
-```
+create policy "Les apprenants voient les classes rejointes"
+  on carnet.classes for select
+  to authenticated
+  using (carnet.is_class_member(id));
 
-Ouvre http://localhost:3000 dans ton navigateur. Crée un compte enseignant,
-puis un compte apprenant (dans un autre navigateur ou en navigation privée)
-pour tester le flux complet.
+create policy "L'enseignant voit les membres de ses classes"
+  on carnet.class_members for select
+  to authenticated
+  using (carnet.is_class_teacher(class_id));
 
----
+create policy "Un apprenant voit sa propre inscription"
+  on carnet.class_members for select
+  to authenticated
+  using (student_id = auth.uid());
 
-## Étape 5 — Mettre le projet sur GitHub
+-- Rejoindre une classe par code (fonction sécurisée : l'apprenant n'a pas
+-- besoin d'un accès direct en lecture à la table classes pour vérifier le code).
+create function carnet.join_class_by_code(p_code text)
+returns carnet.classes
+language plpgsql
+security definer set search_path = carnet
+as $$
+declare
+  v_class carnet.classes;
+begin
+  select * into v_class from carnet.classes where code = upper(p_code);
 
-1. Crée un compte sur https://github.com si tu n'en as pas
-2. Crée un nouveau dépôt (repository), vide
-3. Dans ton terminal, à la racine du projet :
-   ```
-   git init
-   git add .
-   git commit -m "Premier envoi"
-   git branch -M main
-   git remote add origin URL_DE_TON_DEPOT
-   git push -u origin main
-   ```
-   (remplace `URL_DE_TON_DEPOT` par l'adresse donnée par GitHub)
+  if v_class.id is null then
+    raise exception 'Code de classe invalide.';
+  end if;
 
-⚠️ Le fichier `.env.local` ne sera **jamais** envoyé sur GitHub (il est
-exclu automatiquement par `.gitignore`) — c'est voulu, il contient tes clés
-secrètes.
+  insert into carnet.class_members (class_id, student_id)
+  values (v_class.id, auth.uid())
+  on conflict (class_id, student_id) do nothing;
 
----
+  return v_class;
+end;
+$$;
 
-## Étape 6 — Déployer sur Vercel (site en ligne, gratuit pour démarrer)
+grant execute on function carnet.join_class_by_code(text) to authenticated;
 
-1. Va sur https://vercel.com, connecte-toi avec ton compte GitHub
-2. Clique **Add New** → **Project**, choisis ton dépôt GitHub
-3. Avant de cliquer *Deploy*, ouvre **Environment Variables** et ajoute les
-   3 mêmes valeurs que dans `.env.local`
-4. Clique **Deploy** — après 1-2 minutes, ton site est en ligne avec une
-   adresse du type `ton-projet.vercel.app`
+-- ─── ANNONCES ───
+create table carnet.announcements (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references carnet.classes(id) on delete cascade,
+  author_id uuid not null references carnet.profiles(id),
+  title text not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
 
-Chaque fois que tu modifieras le code et feras un `git push`, Vercel
-redéploiera automatiquement la nouvelle version.
+grant all on carnet.announcements to authenticated, anon;
+alter table carnet.announcements enable row level security;
 
----
+create policy "Membres et enseignant lisent les annonces"
+  on carnet.announcements for select
+  to authenticated
+  using (carnet.is_class_teacher(class_id) or carnet.is_class_member(class_id));
 
-## Ce qui reste à faire ensuite
+create policy "L'enseignant publie des annonces"
+  on carnet.announcements for insert
+  to authenticated
+  with check (carnet.is_class_teacher(class_id) and author_id = auth.uid());
 
-Cette base couvre les 4 modules demandés (documents, activités, grilles,
-devoirs corrigés par l'IA) avec une vraie authentification et une vraie base
-de données. Pour la suite, ouvre ce dossier avec **Claude Code** — dis-lui
-simplement ce que tu veux ajouter ou ajuster (ex. "ajoute l'upload de vrais
-fichiers PDF via Supabase Storage", "améliore le design du tableau de
-bord") et il pourra modifier directement les fichiers du projet.
+create policy "L'enseignant supprime ses annonces"
+  on carnet.announcements for delete
+  to authenticated
+  using (carnet.is_class_teacher(class_id));
 
-### Idées de prochaines étapes
-- Upload de vrais fichiers PDF (via **Supabase Storage**, un espace de
-  stockage inclus dans ton projet Supabase)
-- Domaine personnalisé (ex. `moncarnet.ca`) au lieu de `.vercel.app`
-- Vraie confirmation de courriel avant l'accès
-- Tableau de suivi des progrès par apprenant
+-- ─── RESSOURCES (documents) ───
+create table carnet.resources (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references carnet.classes(id) on delete cascade,
+  author_id uuid not null references carnet.profiles(id),
+  title text not null,
+  url text not null,
+  description text,
+  category text not null default 'Site',
+  created_at timestamptz not null default now()
+);
+
+grant all on carnet.resources to authenticated, anon;
+alter table carnet.resources enable row level security;
+
+create policy "Membres et enseignant lisent les ressources"
+  on carnet.resources for select
+  to authenticated
+  using (carnet.is_class_teacher(class_id) or carnet.is_class_member(class_id));
+
+create policy "L'enseignant ajoute des ressources"
+  on carnet.resources for insert
+  to authenticated
+  with check (carnet.is_class_teacher(class_id) and author_id = auth.uid());
+
+create policy "L'enseignant supprime ses ressources"
+  on carnet.resources for delete
+  to authenticated
+  using (carnet.is_class_teacher(class_id));
+
+-- ─── DEVOIRS (activités / assignments) ───
+create table carnet.assignments (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references carnet.classes(id) on delete cascade,
+  author_id uuid not null references carnet.profiles(id),
+  title text not null,
+  instructions text not null,
+  assignment_type text not null default 'Rédaction',
+  due_date date,
+  nclc_level text,
+  -- Pièce jointe de support (lien externe OU fichier téléversé — Word/PDF/YouTube/Autre)
+  attachment_type text check (attachment_type in ('Word', 'PDF', 'YouTube', 'Autre')),
+  attachment_url text,
+  attachment_title text,
+  -- Questions/critères d'évaluation définis par l'enseignant·e, utilisés par l'IA
+  evaluation_questions jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+
+grant all on carnet.assignments to authenticated, anon;
+alter table carnet.assignments enable row level security;
+
+create policy "Membres et enseignant lisent les devoirs"
+  on carnet.assignments for select
+  to authenticated
+  using (carnet.is_class_teacher(class_id) or carnet.is_class_member(class_id));
+
+create policy "L'enseignant crée des devoirs"
+  on carnet.assignments for insert
+  to authenticated
+  with check (carnet.is_class_teacher(class_id) and author_id = auth.uid());
+
+create policy "L'enseignant supprime ses devoirs"
+  on carnet.assignments for delete
+  to authenticated
+  using (carnet.is_class_teacher(class_id));
+
+-- ─── REMISES (soumissions des apprenants) ───
+create table carnet.submissions (
+  id uuid primary key default gen_random_uuid(),
+  assignment_id uuid not null references carnet.assignments(id) on delete cascade,
+  student_id uuid not null references carnet.profiles(id) on delete cascade,
+  content text,
+  -- Fichier PDF téléversé (alternative au texte collé) — voir bucket 'carnet-devoirs' plus bas
+  file_url text,
+  file_name text,
+  status text not null default 'remis' check (status in ('remis', 'corrige')),
+  submitted_at timestamptz not null default now(),
+  unique (assignment_id, student_id),
+  constraint remise_contenu_ou_fichier check (content is not null or file_url is not null)
+);
+
+grant all on carnet.submissions to authenticated, anon;
+alter table carnet.submissions enable row level security;
+
+create policy "L'apprenant gère sa propre remise"
+  on carnet.submissions for all
+  to authenticated
+  using (student_id = auth.uid())
+  with check (student_id = auth.uid());
+
+create policy "L'enseignant lit les remises de ses devoirs"
+  on carnet.submissions for select
+  to authenticated
+  using (
+    exists (
+      select 1 from carnet.assignments a
+      where a.id = assignment_id and carnet.is_class_teacher(a.class_id)
+    )
+  );
+
+-- ─── CORRECTIONS IA ───
+create table carnet.corrections (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid not null unique references carnet.submissions(id) on delete cascade,
+  annotated_text text not null,
+  errors jsonb not null default '[]',
+  criteria jsonb not null default '[]',
+  score integer,
+  feedback_strengths text,
+  feedback_improve text,
+  created_at timestamptz not null default now()
+);
+
+grant all on carnet.corrections to authenticated, anon;
+alter table carnet.corrections enable row level security;
+
+create policy "L'apprenant lit la correction de sa remise"
+  on carnet.corrections for select
+  to authenticated
+  using (
+    exists (
+      select 1 from carnet.submissions s
+      where s.id = submission_id and s.student_id = auth.uid()
+    )
+  );
+
+create policy "L'enseignant lit les corrections de ses devoirs"
+  on carnet.corrections for select
+  to authenticated
+  using (
+    exists (
+      select 1 from carnet.submissions s
+      join carnet.assignments a on a.id = s.assignment_id
+      where s.id = submission_id and carnet.is_class_teacher(a.class_id)
+    )
+  );
+
+create policy "L'apprenant enregistre la correction de sa propre remise"
+  on carnet.corrections for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from carnet.submissions s
+      where s.id = submission_id and s.student_id = auth.uid()
+    )
+  );
+
+-- ─── STOCKAGE (Supabase Storage) — fichiers de devoirs et de remises ───
+-- Bucket dédié 'carnet-devoirs' (nom distinct de tout autre bucket existant).
+-- Bucket public : les liens générés sont accessibles à quiconque les possède
+-- (comme un lien Google Docs), mais seuls l'enseignant·e de la classe et
+-- l'apprenant·e concerné·e peuvent y déposer des fichiers.
+insert into storage.buckets (id, name, public)
+values ('carnet-devoirs', 'carnet-devoirs', true)
+on conflict (id) do nothing;
+
+-- Ces règles vivent sur storage.objects, une table partagée par tout le
+-- projet (pas dans le schéma "carnet") — on les supprime d'abord si elles
+-- existent déjà pour que ce script reste rejouable sans erreur.
+drop policy if exists "Carnet — l'enseignant dépose des pièces jointes pour ses classes" on storage.objects;
+drop policy if exists "Carnet — l'enseignant supprime ses pièces jointes" on storage.objects;
+drop policy if exists "Carnet — l'apprenant dépose sa propre remise" on storage.objects;
+drop policy if exists "Carnet — l'apprenant remplace sa propre remise" on storage.objects;
+
+-- Chemin des pièces jointes de devoir : pieces-jointes/{class_id}/{fichier}
+create policy "Carnet — l'enseignant dépose des pièces jointes pour ses classes"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'carnet-devoirs'
+    and (storage.foldername(name))[1] = 'pieces-jointes'
+    and carnet.is_class_teacher(((storage.foldername(name))[2])::uuid)
+  );
+
+create policy "Carnet — l'enseignant supprime ses pièces jointes"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'carnet-devoirs'
+    and (storage.foldername(name))[1] = 'pieces-jointes'
+    and carnet.is_class_teacher(((storage.foldername(name))[2])::uuid)
+  );
+
+-- Chemin des remises : remises/{assignment_id}/{student_id}/{fichier}
+create policy "Carnet — l'apprenant dépose sa propre remise"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'carnet-devoirs'
+    and (storage.foldername(name))[1] = 'remises'
+    and (storage.foldername(name))[3] = auth.uid()::text
+  );
+
+create policy "Carnet — l'apprenant remplace sa propre remise"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'carnet-devoirs'
+    and (storage.foldername(name))[1] = 'remises'
+    and (storage.foldername(name))[3] = auth.uid()::text
+  );
