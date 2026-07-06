@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de grilles ELBP — NCLC</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:wght@600&display=swap');
+:root{
+  --teal:#0F6E56;--teal-light:#E1F5EE;--teal-mid:#1D9E75;
+  --blue:#185FA5;--blue-light:#E6F1FB;
+  --amber:#854F0B;--amber-light:#FAEEDA;
+  --red:#A32D2D;--red-light:#FCEBEB;
+  --green:#3B6D11;--green-light:#EAF3DE;
+  --gray-50:#F7F7F5;--gray-100:#EBEBEB;--gray-200:#D4D4D4;
+  --gray-400:#888;--gray-600:#555;--gray-900:#1A1A1A;
+  --border:#E0E0E0;--radius:8px;--radius-lg:12px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--gray-50);color:var(--gray-900);min-height:100vh;font-size:15px;line-height:1.6}
+header{background:var(--teal);color:#fff;padding:1.5rem 2rem;display:flex;align-items:center;gap:1rem}
+header .logo{width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:22px;color:#fff;flex-shrink:0}
+header h1{font-family:'Fraunces',serif;font-size:1.35rem;font-weight:600}
+header p{font-size:13px;opacity:.8;margin-top:1px}
+
+/* Nav tabs */
+.nav-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1.5rem;background:#fff;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;box-shadow:var(--shadow)}
+.nav-tab{flex:1;padding:.85rem 1rem;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--gray-600);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.nav-tab:hover{color:var(--teal);background:var(--teal-light)}
+.nav-tab.active{color:var(--teal);border-bottom-color:var(--teal);background:#fff}
+.nav-tab .tab-icon{font-size:17px}
+
+.page{display:none}.page.active{display:block}
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:1.5rem;overflow:hidden}
+.card-head{padding:.9rem 1.25rem;border-bottom:1px solid var(--border);background:var(--gray-50);display:flex;align-items:center;gap:.6rem}
+.card-head h2{font-size:14px;font-weight:600}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-body{padding:1.25rem}
+
+/* Theme & type grids */
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.theme-btn{border:1.5px solid var(--border);border-radius:var(--radius);padding:.65rem .75rem;cursor:pointer;background:#fff;text-align:left;font-family:'Inter',sans-serif;display:flex;flex-direction:column;gap:3px;transition:border-color .15s,background .15s}
+.theme-btn:hover{border-color:var(--teal-mid);background:var(--teal-light)}
+.theme-btn.active{border-color:var(--teal);background:var(--teal-light)}
+.theme-btn .t-icon{font-size:20px;line-height:1}
+.theme-btn .t-name{font-size:13px;font-weight:600;color:var(--gray-900)}
+.theme-btn.active .t-name{color:var(--teal)}
+.theme-btn .t-dom{font-size:11px;color:var(--gray-400)}
+.type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.type-btn{border:1.5px solid var(--border);border-radius:var(--radius);padding:.7rem .8rem;cursor:pointer;background:#fff;text-align:left;font-family:'Inter',sans-serif;transition:border-color .15s,background .15s}
+.type-btn:hover{border-color:var(--teal-mid);background:var(--teal-light)}
+.type-btn.active{border-color:var(--teal);background:var(--teal-light)}
+.type-btn .t-title{font-size:13px;font-weight:600;color:var(--gray-900);display:block}
+.type-btn.active .t-title{color:var(--teal)}
+.type-btn .t-sub{font-size:11px;color:var(--gray-600);display:block;margin-top:2px}
+
+/* Form */
+.fields{display:flex;flex-direction:column;gap:1rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:.55rem .75rem;font-family:'Inter',sans-serif;font-size:14px;color:var(--gray-900);background:#fff;transition:border-color .15s;appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;padding-right:2rem}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,110,86,.1)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.5}
+.field .hint{font-size:12px;color:var(--gray-400);margin-top:5px}
+.auto-tag{display:inline-block;font-size:11px;background:var(--teal-light);color:var(--teal);border-radius:4px;padding:1px 7px;margin-left:6px;font-weight:500}
+.prefill-preview{background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--radius);padding:.75rem 1rem;margin-top:.75rem;font-size:13px;color:#0A5C38;display:none}
+.hidden{display:none!important}
+.btn-gen{width:100%;background:var(--teal);color:#fff;border:none;border-radius:var(--radius);padding:.85rem 1.5rem;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-gen:hover{background:var(--teal-mid)}
+.btn-gen:active{transform:scale(.98)}
+.action-bar{display:flex;gap:.75rem;flex-wrap:wrap;padding:1rem 1.25rem;border-top:1px solid var(--border);background:var(--gray-50)}
+.btn-action{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:.5rem 1rem;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:border-color .15s,background .15s;color:var(--gray-900)}
+.btn-action:hover{border-color:var(--teal);background:var(--teal-light);color:var(--teal)}
+.btn-action.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-action.primary:hover{background:var(--teal-mid)}
+.err{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:var(--radius);padding:.75rem 1rem;font-size:13px;color:#991B1B;display:flex;align-items:center;gap:.5rem}
+
+/* Grille preview */
+#preview-section{display:none}
+#preview-section.visible{display:block}
+#grille-preview{padding:1.25rem;overflow-x:auto}
+.grille-table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.5}
+.grille-table td,.grille-table th{border:1px solid #CCC;padding:7px 10px;vertical-align:top}
+.grille-table th{background:#EEE;font-weight:600;text-align:center}
+.grille-table .row-head{background:#F5F5F5;font-weight:600;font-size:12px}
+.grille-table .section-teal{background:#E8F5EE;font-weight:600;font-size:12px;color:var(--teal)}
+.grille-table .section-blue{background:#E6F1FB;font-weight:600;font-size:12px;color:var(--blue)}
+.grille-table .section-amber{background:var(--amber-light);font-weight:600;font-size:12px;color:var(--amber)}
+.grille-table .hol-row{background:#F9F9F9;font-weight:500}
+.grille-table .star{color:var(--red);font-weight:700}
+.grille-table .check-cell{text-align:center;width:90px;min-width:80px}
+.grille-table .label-cell{background:#F5F5F5;font-size:12px;font-weight:600;color:var(--gray-600);width:170px}
+.grille-table .success-row td{background:#FFFBEB}
+.grille-table .feedback-row td{min-height:60px;height:60px}
+.grille-table .note-row td{background:#F9F9F9;font-size:12px;color:var(--gray-600);font-style:italic}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:4px;margin-left:5px}
+.badge-teal{background:var(--teal-light);color:#0A5C38}
+.badge-blue{background:var(--blue-light);color:var(--blue)}
+.badge-amber{background:var(--amber-light);color:var(--amber)}
+
+/* ── CO-ÉVALUATION ── */
+.coeval-intro{background:var(--blue-light);border:1px solid #B5D4F4;border-radius:var(--radius);padding:.85rem 1rem;font-size:13px;color:#0C447C;margin-bottom:1.25rem;line-height:1.6}
+.nom-field{margin-bottom:1rem}
+.nom-field input{max-width:320px}
+
+.coeval-table{width:100%;border-collapse:collapse;font-size:13px}
+.coeval-table th,.coeval-table td{border:1px solid #CCC;padding:8px 10px;vertical-align:middle}
+.coeval-table thead th{background:#EEE;font-weight:600;font-size:12px}
+.coeval-table .crit-col{width:46%}
+.coeval-table .star{color:var(--red);font-weight:700}
+.coeval-table .sec-row td{font-weight:600;font-size:12px}
+.coeval-table .sec-teal td{background:#E8F5EE;color:var(--teal)}
+.coeval-table .sec-blue td{background:#E6F1FB;color:var(--blue)}
+.coeval-table .sec-amber td{background:var(--amber-light);color:var(--amber)}
+.coeval-table .sec-gray td{background:#F5F5F5;color:var(--gray-600)}
+.coeval-table .hol-row td{background:#F9F9F9;font-weight:500}
+
+/* Radio toggle OUI/NON */
+.toggle-group{display:flex;gap:4px;justify-content:center}
+.toggle-group label{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius);border:1.5px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;transition:all .12s;white-space:nowrap}
+.toggle-group input[type=radio]{display:none}
+.toggle-group .oui-lbl{color:var(--green)}
+.toggle-group .non-lbl{color:var(--red)}
+.toggle-group input[type=radio]:checked+.oui-lbl{background:var(--green-light);border-color:var(--green);color:var(--green)}
+.toggle-group input[type=radio]:checked+.non-lbl{background:var(--red-light);border-color:var(--red);color:var(--red)}
+
+/* Feedback textareas */
+.feedback-section{margin-top:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.feedback-section textarea{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:.6rem .75rem;font-family:'Inter',sans-serif;font-size:13px;min-height:80px;resize:vertical}
+.feedback-section label{display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+
+/* Bilan */
+.bilan-card{border-radius:var(--radius-lg);overflow:hidden;margin-top:1.5rem;border:1px solid var(--border)}
+.bilan-header{padding:1rem 1.25rem;font-weight:600;font-size:15px;display:flex;align-items:center;gap:.75rem}
+.bilan-header.success{background:var(--green-light);color:var(--green);border-bottom:1px solid #C0DD97}
+.bilan-header.fail{background:var(--red-light);color:var(--red);border-bottom:1px solid #F09595}
+.bilan-header.pending{background:var(--amber-light);color:var(--amber);border-bottom:1px solid #EF9F27}
+.bilan-body{padding:1rem 1.25rem;background:#fff}
+.bilan-score-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.score-box{background:var(--gray-50);border-radius:var(--radius);padding:.75rem 1rem;text-align:center}
+.score-box .score-num{font-size:28px;font-weight:600;line-height:1}
+.score-box .score-lbl{font-size:12px;color:var(--gray-400);margin-top:3px}
+.score-box.apprenant .score-num{color:var(--blue)}
+.score-box.instructeur .score-num{color:var(--teal)}
+
+.divergence-list{margin-top:.75rem}
+.divergence-list h4{font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.04em}
+.div-item{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .75rem;border-radius:var(--radius);margin-bottom:4px;font-size:13px;line-height:1.4}
+.div-item.app-oui{background:#E6F1FB}
+.div-item.app-non{background:#FCEBEB}
+.div-icon{flex-shrink:0;margin-top:1px;font-size:15px}
+
+.bilan-feedback{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem}
+.bilan-fb-box{background:var(--gray-50);border-radius:var(--radius);padding:.75rem 1rem}
+.bilan-fb-box h4{font-size:12px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem}
+.bilan-fb-box p{font-size:13px;color:var(--gray-900);font-style:italic}
+
+.correction-tab{font-family:'Inter',sans-serif;border:none;background:none;padding:7px 14px;font-size:13px;cursor:pointer;color:var(--gray-600);border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.correction-tab:hover{color:var(--teal)}
+.correction-tab.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:500}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.row2,.row3{grid-template-columns:1fr}.theme-grid,.type-grid{grid-template-columns:1fr 1fr}.feedback-section,.bilan-score-row,.bilan-feedback{grid-template-columns:1fr}header{padding:1rem}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">G</div>
+  <div>
+    <h1>Générateur de grilles ELBP</h1>
+    <p>Niveaux de compétence linguistique canadiens (NCLC) — Français langue seconde</p>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- Navigation -->
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showPage('page-gen',this)">
+    <span class="tab-icon">📋</span> Créer une grille
+  </button>
+  <button class="nav-tab" onclick="showPage('page-coeval',this)" id="tab-coeval">
+    <span class="tab-icon">✅</span> Co-évaluation
+  </button>
+  <button class="nav-tab" onclick="showPage('page-app',this)" id="tab-app">
+    <span class="tab-icon">👤</span> Mode apprenant
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 1 : CRÉER -->
+<div class="page active" id="page-gen">
+
+<div class="card">
+  <div class="card-head"><div class="step-num">1</div><h2>Choisissez un thème <span style="font-weight:400;color:var(--gray-400)">— domaine et tâche se remplissent automatiquement</span></h2></div>
+  <div class="card-body">
+    <div class="theme-grid" id="theme-grid"></div>
+    <div class="prefill-preview" id="prefill-preview"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="step-num">2</div><h2>Type de grille</h2></div>
+  <div class="card-body">
+    <div class="type-grid">
+      <button class="type-btn active" onclick="setType('base',this)"><span class="t-title">Base</span><span class="t-sub">1 NCLC · 1 domaine</span></button>
+      <button class="type-btn" onclick="setType('multi2',this)"><span class="t-title">Multiniveaux ×2</span><span class="t-sub">2 NCLC · 1 domaine</span></button>
+      <button class="type-btn" onclick="setType('multi3',this)"><span class="t-title">Multiniveaux ×3</span><span class="t-sub">3 NCLC · 1 domaine</span></button>
+      <button class="type-btn" onclick="setType('dom2',this)"><span class="t-title">Multi-domaines</span><span class="t-sub">1 NCLC · 2 domaines</span></button>
+      <button class="type-btn" onclick="setType('multi2dom2',this)"><span class="t-title">Combinée</span><span class="t-sub">2 NCLC · 2 domaines</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="step-num">3</div><h2>Paramètres</h2></div>
+  <div class="card-body fields">
+    <div class="row3">
+      <div class="field"><label>NCLC principal</label><select id="nclc1" onchange="syncNclc()"><option>1</option><option>2</option><option>3</option><option>4</option><option value="5" selected>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div>
+      <div class="field hidden" id="f-nclc2"><label>NCLC 2</label><select id="nclc2"><option>2</option><option>3</option><option>4</option><option>5</option><option value="6" selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div>
+      <div class="field hidden" id="f-nclc3"><label>NCLC 3</label><select id="nclc3"><option>3</option><option>4</option><option>5</option><option>6</option><option value="7" selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Habileté</label><select id="habilete"><option>Expression écrite</option><option>Expression orale</option><option>Compréhension de l'écrit</option><option>Compréhension de l'oral</option></select></div>
+      <div class="field"><label>Domaine principal <span class="auto-tag" id="auto-tag1" style="display:none">auto</span></label><select id="domaine1"><option value="I. Relations interpersonnelles">I. Relations interpersonnelles</option><option value="II. Reproduction de l'information">II. Reproduction de l'information</option><option value="III. Affaires et services">III. Affaires et services</option><option value="IV. Information">IV. Information</option></select></div>
+    </div>
+    <div class="field hidden" id="f-domaine2"><label>Deuxième domaine <span class="auto-tag" id="auto-tag2" style="display:none">auto</span></label><select id="domaine2"><option value="I. Relations interpersonnelles">I. Relations interpersonnelles</option><option value="II. Reproduction de l'information">II. Reproduction de l'information</option><option value="III. Affaires et services">III. Affaires et services</option><option value="IV. Information" selected>IV. Information</option></select></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="step-num">4</div><h2>Tâche d'évaluation <span class="auto-tag" id="auto-tag-tache" style="display:none">pré-remplie</span></h2></div>
+  <div class="card-body fields">
+    <div class="field"><label>Description de la tâche</label><textarea id="tache" placeholder="Choisissez d'abord un thème ci-dessus, ou décrivez directement votre tâche ici."></textarea><div class="hint">La tâche doit refléter une situation de communication authentique du quotidien de vos apprenants.</div></div>
+    <div id="errbox" style="display:none" class="err"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="err-msg"></span></div>
+    <button class="btn-gen" onclick="generer()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Générer la grille
+    </button>
+  </div>
+</div>
+
+<div class="card" id="preview-section">
+  <div class="card-head" style="background:#E8F5EE;border-color:#9FE1CB">
+    <svg width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    <h2 style="color:var(--teal)">Grille générée</h2>
+  </div>
+  <div id="grille-preview"></div>
+  <div class="action-bar">
+    <button class="btn-action primary" onclick="window.print()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimer / PDF</button>
+    <button class="btn-action" onclick="afficherCodeGrille()" style="border-color:var(--teal);color:var(--teal)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Partager avec les apprenants</button>
+    <button class="btn-action" onclick="lancerCoeval()" style="border-color:var(--teal);color:var(--teal);font-weight:500"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Corriger les travaux</button>
+    <button class="btn-action" onclick="copierTexte()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copier le texte</button>
+    <button class="btn-action" onclick="nouvelleGrille()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>Nouvelle grille</button>
+  </div>
+</div>
+
+</div><!-- end page-gen -->
+
+<!-- ═══════════════════════════════════════════════════ PAGE 2 : CORRECTION -->
+<div class="page" id="page-coeval">
+
+<div class="card" id="coeval-empty" style="display:block">
+  <div class="card-body" style="text-align:center;padding:2.5rem;color:var(--gray-400)">
+    <div style="font-size:40px;margin-bottom:.75rem">📝</div>
+    <p style="font-size:15px;font-weight:500;color:var(--gray-600);margin-bottom:.4rem">Aucune grille chargée</p>
+    <p style="font-size:13px">Générez d'abord une grille dans l'onglet <strong>Créer une grille</strong>, puis cliquez sur <strong>Corriger les travaux</strong>.</p>
+  </div>
+</div>
+
+<div id="coeval-main" style="display:none">
+
+  <!-- ÉTAPE 1 : Infos + texte apprenant -->
+  <div class="card">
+    <div class="card-head"><div class="step-num">1</div><h2>Texte de l'apprenant</h2></div>
+    <div class="card-body">
+      <div class="row2" style="margin-bottom:1rem">
+        <div class="field"><label>Nom de l'apprenant</label><input type="text" id="nom-apprenant" placeholder="Prénom Nom"></div>
+        <div class="field"><label>Date</label><input type="date" id="date-eval"></div>
+      </div>
+      <div class="field">
+        <label>Texte soumis par l'apprenant</label>
+        <textarea id="texte-apprenant" rows="8" placeholder="Collez ici le texte écrit par l'apprenant (courriel, blogue, message, etc.)…" style="min-height:160px;line-height:1.6"></textarea>
+        <div id="stats-texte" style="font-size:12px;color:var(--gray-400);margin-top:4px;display:none"></div>
+      </div>
+      <button class="btn-gen" id="btn-analyser" onclick="analyserTexte()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Analyser et corriger le texte
+      </button>
+      <div id="analyse-err" class="err" style="display:none;margin-top:.75rem"><span id="analyse-err-msg"></span></div>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 2 : Correction détaillée du texte -->
+  <div class="card" id="correction-detail-card" style="display:none">
+    <div class="card-head" style="background:#FFF7ED;border-color:#FCD34D">
+      <div class="step-num" style="background:#F59E0B">2</div>
+      <h2>Correction du texte <span id="correction-stats" style="font-weight:400;font-size:13px;color:var(--gray-400)"></span></h2>
+    </div>
+    <div class="card-body" style="padding-bottom:0">
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto">
+        <button class="correction-tab active" id="tab-annote" onclick="showCorrTab('annote')">📝 Texte annoté</button>
+        <button class="correction-tab" id="tab-erreurs" onclick="showCorrTab('erreurs')">🔴 Erreurs <span id="nb-erreurs" style="font-size:11px;color:var(--red)"></span></button>
+        <button class="correction-tab" id="tab-suggestions" onclick="showCorrTab('suggestions')">💡 Suggestions pédagogiques</button>
+      </div>
+      <div id="pane-annote" style="padding-bottom:1rem">
+        <div id="texte-annote" style="font-size:14px;line-height:2;padding:1rem;background:var(--gray-50);border-radius:var(--radius);border:1px solid var(--border);min-height:80px"></div>
+        <div style="display:flex;gap:12px;margin-top:.6rem;flex-wrap:wrap">
+          <span style="font-size:12px;display:flex;align-items:center;gap:4px"><span style="background:#FEE2E2;border-bottom:2px solid #EF4444;padding:0 5px;border-radius:2px;font-size:12px">mot</span> Orthographe</span>
+          <span style="font-size:12px;display:flex;align-items:center;gap:4px"><span style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:0 5px;border-radius:2px;font-size:12px">mot</span> Grammaire</span>
+          <span style="font-size:12px;display:flex;align-items:center;gap:4px"><span style="background:#E0F2FE;border-bottom:2px solid #3B82F6;padding:0 5px;border-radius:2px;font-size:12px">mot</span> Style / Ponctuation</span>
+          <span style="font-size:12px;color:var(--gray-400)">— Cliquez sur un mot surligné pour voir la correction</span>
+        </div>
+      </div>
+      <div id="pane-erreurs" style="display:none;padding-bottom:1rem"><div id="corrections-list"></div></div>
+      <div id="pane-suggestions" style="display:none;padding-bottom:1rem"><div id="suggestions-list"></div></div>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 3 : Critères avec évaluation automatique -->
+  <div class="card" id="criteres-card" style="display:none">
+    <div class="card-head" style="background:#E8F5EE;border-color:#9FE1CB">
+      <div class="step-num">3</div>
+      <h2 style="color:var(--teal)">Évaluation des critères <span id="criteres-titre-sub" style="font-weight:400;font-size:13px;color:var(--teal)"></span></h2>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div style="padding:.75rem 1.25rem;background:var(--blue-light);border-bottom:1px solid #B5D4F4;font-size:13px;color:#0C447C">
+        Les critères ont été analysés automatiquement. <strong>Vérifiez chaque résultat</strong> et cliquez pour corriger si nécessaire.
+      </div>
+      <div id="criteres-analyse-list"></div>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 3 : Rétroaction + bilan -->
+  <div class="card" id="feedback-card" style="display:none">
+    <div class="card-head"><div class="step-num">4</div><h2>Rétroaction</h2></div>
+    <div class="card-body">
+      <button onclick="genererRetroactionAuto()" style="font-family:var(--font-sans);border:1.5px solid var(--teal);border-radius:var(--radius);padding:.55rem 1rem;font-size:13px;font-weight:500;cursor:pointer;background:var(--teal-light);color:var(--teal);margin-bottom:1rem;display:flex;align-items:center;gap:.4rem">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Générer la rétroaction automatiquement
+      </button>
+      <div class="feedback-section">
+        <div>
+          <label>Ce que l'apprenant a bien réussi</label>
+          <textarea id="fb-reussi" placeholder="Cliquez sur le bouton ci-dessus pour générer automatiquement, ou rédigez votre rétroaction ici…" style="min-height:100px"></textarea>
+        </div>
+        <div>
+          <label>Ce qu'il faut travailler</label>
+          <textarea id="fb-travailler" placeholder="Cliquez sur le bouton ci-dessus pour générer automatiquement, ou rédigez votre rétroaction ici…" style="min-height:100px"></textarea>
+        </div>
+      </div>
+      <button class="btn-gen" style="margin-top:1rem" onclick="genererBilan()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Générer le bilan
+      </button>
+    </div>
+  </div>
+
+  <!-- BILAN -->
+  <div id="bilan-section" style="display:none">
+    <div id="bilan-output"></div>
+    <div class="action-bar" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-top:.5rem">
+      <button class="btn-action primary" onclick="telechargerCopieWord()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>Télécharger la copie (.doc)</button>
+      <button class="btn-action" onclick="window.print()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimer / PDF</button>
+      <button class="btn-action" onclick="reinitCoeval()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>Nouvel apprenant</button>
+    </div>
+  </div>
+
+</div><!-- end coeval-main -->
+</div><!-- end page-coeval -->
+
+<!-- ═══════════════════════════════════════════════ PAGE 3 : MODE APPRENANT -->
+<div class="page" id="page-app">
+
+<div class="card">
+  <div class="card-head" style="background:var(--blue-light);border-color:#B5D4F4">
+    <span style="font-size:18px">👤</span>
+    <h2 style="color:var(--blue)">Mode apprenant — Auto-évaluation</h2>
+  </div>
+  <div class="card-body">
+    <div class="coeval-intro" style="background:var(--blue-light);border-color:#B5D4F4;color:#0C447C">
+      Votre instructeur vous a donné un <strong>code de grille</strong>. Collez-le ci-dessous pour charger votre évaluation. Cochez chaque critère honnêtement, puis copiez votre <strong>code de soumission</strong> et déposez-le dans le LMS avec votre travail.
+    </div>
+    <div class="row2" style="margin-top:1rem">
+      <div class="field"><label>Votre nom</label><input type="text" id="app-nom" placeholder="Prénom Nom"></div>
+      <div class="field"><label>Date</label><input type="date" id="app-date"></div>
+    </div>
+    <div class="field" style="margin-top:.75rem">
+      <label>Code de grille <span style="font-weight:400;color:var(--gray-400)">(fourni par votre instructeur)</span></label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="app-code-input" placeholder="Collez le code ici : GRILLE:eyJ..." style="font-family:var(--font-mono);font-size:13px;flex:1">
+        <button class="btn-gen" style="width:auto;padding:.55rem 1rem;font-size:14px" onclick="chargerGrilleApprenant()">Charger</button>
+      </div>
+    </div>
+    <div id="app-err" class="err" style="display:none;margin-top:.5rem"><span id="app-err-msg"></span></div>
+  </div>
+</div>
+
+<div id="app-grille-section" style="display:none">
+  <div class="card">
+    <div class="card-head"><div class="step-num" style="background:var(--blue)">2</div><h2 id="app-grille-titre">Auto-évaluation</h2></div>
+    <div class="card-body">
+      <div style="overflow-x:auto">
+        <table class="coeval-table" id="app-table">
+          <thead>
+            <tr>
+              <th class="crit-col" style="text-align:left">Critère d'évaluation</th>
+              <th style="min-width:160px;text-align:center"><span style="color:var(--blue)">👤 Votre auto-évaluation</span><br><span style="font-size:11px;font-weight:400">Cochez honnêtement</span></th>
+            </tr>
+          </thead>
+          <tbody id="app-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem">
+        <button class="btn-gen" style="background:var(--blue)" onclick="genererCodeSoumission()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Générer mon code de soumission
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="app-code-result" style="display:none">
+    <div class="card-head" style="background:#E8F5EE;border-color:#9FE1CB">
+      <svg width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <h2 style="color:var(--teal)">Votre code de soumission</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:.75rem">Copiez ce code et collez-le dans votre remise LMS avec votre travail écrit.</p>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <textarea id="app-code-out" readonly style="flex:1;font-family:var(--font-mono);font-size:12px;min-height:80px;background:var(--gray-50);border:1.5px solid var(--border);border-radius:var(--radius);padding:.6rem .75rem;resize:none;word-break:break-all"></textarea>
+        <button class="btn-action" onclick="copierCodeSoumission()" style="flex-shrink:0;align-self:stretch">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copier
+        </button>
+      </div>
+      <div style="margin-top:.75rem;background:var(--amber-light);border-radius:var(--radius);padding:.65rem .9rem;font-size:12px;color:var(--amber)">
+        ⚠️ <strong>Important :</strong> Collez ce code <em>tel quel</em> dans votre devoir LMS. Votre instructeur l'utilisera pour charger vos réponses lors de la correction.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end page-app -->
+
+<!-- ════ MODAL CODE GRILLE (instructeur → partager) ════ -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:var(--radius-lg);box-shadow:0 8px 40px rgba(0,0,0,.18);max-width:520px;width:90%;padding:1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="font-size:16px;font-weight:600">Partager la grille avec les apprenants</h3>
+      <button onclick="fermerModal()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--gray-400)">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:1rem;line-height:1.6">Copiez ce code et déposez-le dans votre LMS avec les consignes du devoir. Chaque apprenant le collera dans l'outil (onglet <strong>Mode apprenant</strong>) pour charger la grille et faire son auto-évaluation.</p>
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <textarea id="modal-code-out" readonly style="flex:1;font-family:var(--font-mono);font-size:12px;min-height:90px;background:var(--gray-50);border:1.5px solid var(--border);border-radius:var(--radius);padding:.6rem .75rem;resize:none;word-break:break-all"></textarea>
+      <button class="btn-action primary" onclick="copierCodeGrille()" style="flex-shrink:0;align-self:stretch;flex-direction:column;gap:4px">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copier
+      </button>
+    </div>
+    <div style="margin-top:1rem;background:var(--teal-light);border-radius:var(--radius);padding:.65rem .9rem;font-size:12px;color:var(--teal)">
+      ✓ Ce code contient toute la grille (NCLC, critères, tâche). Les apprenants n'ont besoin de rien configurer.
+    </div>
+    <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+      <p style="font-size:13px;font-weight:500;color:var(--gray-900);margin-bottom:.5rem">Après que les apprenants ont soumis leur code dans le LMS :</p>
+      <button class="btn-gen" onclick="fermerModal();showPage('page-coeval',document.getElementById('tab-coeval'))" style="font-size:14px;padding:.7rem">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Aller à la correction (coller le code de l'apprenant)
+      </button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end container -->
+<footer>Générateur de grilles ELBP · Basé sur les Niveaux de compétence linguistique canadiens (NCLC) 3e édition · À usage pédagogique</footer>
+
+<script>
+// ── THÈMES ────────────────────────────────────────────────────────────────
+const THEMES=[
+  {id:'tourisme',name:'Tourisme',icon:'✈️',domaine1:'I. Relations interpersonnelles',domaine2:'IV. Information',taches:{5:'Après avoir participé à une visite touristique, raconter son expérience sur un blogue spécialisé (ou un réseau social).',6:'Après avoir participé à une visite touristique, raconter son expérience et donner son opinion ou ses recommandations sur un blogue spécialisé (ou un réseau social).',7:'Rédiger un article de blogue détaillé sur un séjour touristique, en comparant deux destinations et en formulant des recommandations personnalisées.',8:'Rédiger un compte rendu critique d\'une expérience touristique pour un magazine en ligne, en exprimant des nuances et des recommandations argumentées.'}},
+  {id:'emploi',name:'Emploi',icon:'💼',domaine1:'III. Affaires et services',domaine2:'I. Relations interpersonnelles',taches:{5:'Écrire un courriel à un employeur pour postuler à un poste annoncé et présenter brièvement son expérience.',6:'Rédiger une lettre de présentation pour accompagner une demande d\'emploi et expliquer ses motivations.',7:'Rédiger un curriculum vitæ et une lettre de présentation pour postuler à un poste qui correspond à son profil.',8:'Rédiger une lettre de motivation détaillée pour un poste de responsabilité, en mettant en valeur ses compétences.'}},
+  {id:'sante',name:'Santé',icon:'🏥',domaine1:'III. Affaires et services',domaine2:'IV. Information',taches:{5:'Écrire un message à son médecin pour décrire ses symptômes et demander un rendez-vous.',6:'Rédiger un courriel au service de santé de son quartier pour obtenir des informations sur un programme de prévention.',7:'Rédiger un message à un professionnel de la santé pour faire le suivi d\'un traitement et poser des questions précises.',8:'Rédiger un rapport sommaire sur son état de santé à l\'intention d\'un spécialiste.'}},
+  {id:'logement',name:'Logement',icon:'🏠',domaine1:'III. Affaires et services',domaine2:'I. Relations interpersonnelles',taches:{5:'Écrire un message au propriétaire pour signaler un problème dans le logement et demander une réparation.',6:'Rédiger une lettre formelle au propriétaire pour demander des réparations urgentes et expliquer la situation.',7:'Rédiger une lettre de plainte à la régie du logement pour signaler des manquements du propriétaire.',8:'Rédiger une mise en demeure formelle à un propriétaire en décrivant les manquements au bail.'}},
+  {id:'communaute',name:'Vie communautaire',icon:'🤝',domaine1:'I. Relations interpersonnelles',domaine2:'IV. Information',taches:{5:'Écrire un commentaire sur la page d\'un organisme communautaire pour présenter son quartier et ses activités préférées.',6:'Rédiger un message sur le réseau social d\'une association pour proposer d\'organiser une activité communautaire.',7:'Rédiger un article pour le bulletin d\'information d\'un centre communautaire pour présenter une initiative locale.',8:'Rédiger une proposition formelle à un conseil de quartier pour suggérer une amélioration des services communautaires.'}},
+  {id:'services-gouv',name:'Services gouvernementaux',icon:'🏛️',domaine1:'III. Affaires et services',domaine2:'II. Reproduction de l\'information',taches:{5:'Remplir un formulaire de demande de services gouvernementaux et rédiger un court message explicatif.',6:'Rédiger une lettre à un organisme gouvernemental pour demander des informations sur ses droits.',7:'Rédiger une demande formelle de prestation gouvernementale en décrivant sa situation.',8:'Rédiger un recours administratif formel pour contester une décision gouvernementale.'}},
+  {id:'education',name:'Éducation',icon:'📚',domaine1:'III. Affaires et services',domaine2:'I. Relations interpersonnelles',taches:{5:'Écrire un courriel à un enseignant pour demander des informations sur un cours ou une évaluation.',6:'Rédiger un courriel à l\'administration d\'un établissement pour demander une inscription ou un changement de cours.',7:'Rédiger une lettre de motivation pour être admis à un programme d\'études postsecondaires.',8:'Rédiger un texte d\'opinion pour un cours universitaire en prenant position sur une question d\'actualité.'}},
+  {id:'famille',name:'Famille & relations',icon:'👨‍👩‍👧',domaine1:'I. Relations interpersonnelles',domaine2:null,taches:{5:'Écrire un message à un ami ou un membre de la famille pour partager des nouvelles personnelles.',6:'Rédiger un message personnel pour exprimer ses regrets, présenter ses excuses ou offrir son aide à un proche.',7:'Rédiger un courriel à un collègue pour exprimer sa déception ou sa satisfaction à propos d\'un projet commun.',8:'Rédiger un message personnel délicat pour résoudre un conflit ou exprimer de la sympathie.'}},
+  {id:'consommation',name:'Consommation',icon:'🛒',domaine1:'III. Affaires et services',domaine2:'IV. Information',taches:{5:'Écrire un message à un commerçant pour signaler un problème avec un achat et demander un remboursement.',6:'Rédiger une lettre de plainte à un service à la clientèle pour décrire un problème et demander une compensation.',7:'Rédiger un courriel formel à une entreprise pour contester une facture et exposer les raisons.',8:'Rédiger une mise en demeure à une entreprise pour non-respect d\'un contrat d\'achat.'}},
+  {id:'environnement',name:'Environnement',icon:'🌿',domaine1:'IV. Information',domaine2:'I. Relations interpersonnelles',taches:{5:'Écrire un court texte pour un réseau social afin de sensibiliser son entourage à un geste écologique simple.',6:'Rédiger un commentaire sur un blogue environnemental pour donner son opinion sur une initiative écologique locale.',7:'Rédiger un article pour le journal de classe décrivant un problème environnemental local et proposant des solutions.',8:'Rédiger un rapport argumentatif sur un enjeu environnemental local à l\'intention d\'un conseil municipal.'}},
+  {id:'libre',name:'Thème libre',icon:'✏️',domaine1:null,domaine2:null,taches:{}},
+];
+
+// ── DATA ──────────────────────────────────────────────────────────────────
+const DESCRIPTEURS={
+  "Expression écrite":{"I. Relations interpersonnelles":{1:"Écrire quelques mots ou expressions très simples sur soi-même.",2:"Écrire de très courtes phrases simples sur des sujets très familiers.",3:"Écrire de courtes phrases simples sur des sujets familiers.",4:"Écrire de courts textes simples sur des sujets familiers à des fins personnelles.",5:"Écrire de courts messages personnels, simples à modérément complexes, informels ou formels, à des fins sociales (journal personnel, commentaires sur un réseau social).",6:"Écrire des messages personnels, modérément complexes, informels ou formels, sur des sujets concrets à des fins sociales (vœux en tous genres, expression de regrets, offre de services ou d'aide).",7:"Écrire une variété de textes à caractère personnel modérément complexes sur des sujets concrets et parfois abstraits à des fins sociales.",8:"Écrire une variété de textes à caractère personnel modérément complexes sur des sujets concrets et abstraits, à des fins sociales élargies (condoléances, résolution de conflits, textes d'opinion).",9:"Écrire une variété de textes à caractère personnel complexes dans un contexte exigeant, sur des sujets abstraits ou techniques.",10:"Écrire une variété de textes à caractère personnel complexes et soignés sur le plan stylistique.",11:"Écrire une variété de textes à caractère personnel complexes et nuancés dans un contexte très exigeant.",12:"Écrire avec efficacité et créativité une variété de textes personnels complexes adaptés à la situation et au destinataire."},"II. Reproduction de l'information":{5:"Résumer sous forme de liste de cinq à sept éléments une page d'information factuelle sur un sujet familier.",6:"Résumer sous forme de liste de cinq à dix éléments une page d'information factuelle.",7:"Résumer l'essentiel d'un document de deux pages sur un sujet familier.",8:"Résumer l'essentiel d'un document de deux pages et prendre des notes détaillées.",9:"Résumer le contenu d'un texte complexe (jusqu'à cinq pages) portant sur un sujet abstrait ou technique."},"III. Affaires et services":{5:"Écrire des messages sur les affaires simples à modérément complexes, bien structurés, d'un paragraphe, pour répondre à des besoins personnels courants.",6:"Écrire des messages sur les affaires modérément complexes, bien structurés, de quelques paragraphes.",7:"Écrire des textes sur les affaires modérément complexes de quelques paragraphes bien structurés pour répondre à une variété de besoins.",8:"Écrire des textes sur les affaires modérément complexes, détaillés et bien structurés.",9:"Écrire des textes sur les affaires complexes dans des contextes formels où les enjeux peuvent être élevés."},"IV. Information":{5:"Écrire des textes simples à modérément complexes d'un paragraphe pour décrire des personnes, des objets, des activités ou des procédés familiers.",6:"Écrire des textes simples à modérément complexes d'un ou deux paragraphes pour décrire ou comparer des personnes, des objets, des activités ou des procédés familiers.",7:"Écrire des textes modérément complexes de quelques paragraphes pour décrire ou comparer de façon détaillée.",8:"Écrire des textes modérément complexes de quelques paragraphes sur des sujets familiers, concrets et abstraits.",9:"Écrire des textes complexes et cohérents pour raconter des événements, comparer des idées ou exprimer et analyser des opinions."}},
+  "Expression orale":{"I. Relations interpersonnelles":{5:"Participer à des conversations courantes sur des sujets familiers (parler de tout et de rien, s'excuser, remercier, exprimer un sentiment ou une obligation, faire, accepter ou refuser une invitation).",6:"Participer à des conversations et à des discussions sur des sujets familiers (échanger sur un sujet d'actualité, donner son opinion).",7:"Participer à des conversations non courantes (exprimer sa satisfaction, formuler poliment une plainte ou un souhait).",8:"Participer à des conversations non courantes nécessitant un certain tact (manifester de l'empathie, résoudre des conflits mineurs, rassurer)."},"II. Reproduction de l'information":{5:"Formuler des consignes en lien avec des activités courantes ou des procédures familières.",6:"Formuler des consignes en lien avec des activités courantes ou diverses procédures.",7:"Formuler des consignes détaillées en lien avec des tâches modérément complexes.",8:"Formuler des consignes détaillées en lien avec une variété de tâches modérément complexes."},"III. Affaires et services":{5:"Formuler des demandes, des avertissements, des suggestions, des requêtes et des conseils courants, et y répondre.",6:"Formuler des demandes et des suggestions et expliquer les conséquences possibles.",7:"Formuler une variété de demandes, d'avertissements, de conseils et de recommandations dans un contexte formel ou informel.",8:"Formuler une variété de demandes et de recommandations avec tact et clarté."},"IV. Information":{5:"Fournir et demander de l'information; exprimer une opinion, un sentiment, l'obligation, la capacité ou la certitude. Faire un exposé d'environ cinq minutes.",6:"Fournir et demander de l'information; exprimer une opinion, un sentiment, l'accord ou le désaccord. Faire un exposé d'environ sept minutes.",7:"Fournir et demander de l'information détaillée; exprimer de façon nuancée une opinion ou une réserve. Faire un exposé d'environ dix minutes.",8:"Fournir et demander de l'information détaillée et complexe. Faire un exposé d'environ vingt minutes."}},
+  "Compréhension de l'écrit":{"I. Relations interpersonnelles":{5:"Comprendre des notes, des lettres et des courriels simples à modérément complexes (invitations, remerciements, excuses, compliments).",6:"Comprendre des notes, des lettres et des courriels modérément complexes (annonces, annulations, dispositions ou explications).",7:"Comprendre des notes, des lettres et des courriels modérément complexes (plaintes, expression d'appréciation, de satisfaction ou de mécontentement).",8:"Comprendre des notes, des lettres et des courriels modérément complexes (évaluation d'une situation, expression d'une opinion, réponse à une plainte)."},"IV. Information":{5:"Comprendre des textes narratifs ou descriptifs simples à modérément complexes qui traitent de sujets familiers.",6:"Comprendre des textes narratifs ou descriptifs modérément complexes, de longueur moyenne, qui traitent de sujets familiers.",7:"Comprendre des textes narratifs ou descriptifs modérément complexes, pouvant contenir des ambiguïtés, qui traitent de sujets parfois abstraits.",8:"Comprendre des textes narratifs ou descriptifs détaillés, modérément complexes, pouvant contenir des ambiguïtés, qui traitent de sujets abstraits."},"III. Affaires et services":{5:"Comprendre des textes sur les affaires simples à modérément complexes (brochures, avis publics, dépliants publicitaires, lettres commerciales).",6:"Comprendre des textes sur les affaires modérément complexes (conseils, demandes ou données techniques).",7:"Comprendre des textes sur les affaires modérément complexes (évaluations, recommandations, données techniques).",8:"Comprendre des textes sur les affaires modérément complexes (propositions, recommandations, lignes de conduite)."}},
+  "Compréhension de l'oral":{"I. Relations interpersonnelles":{5:"Comprendre des conversations courantes sur des sujets concrets et familiers liés à l'expérience personnelle.",6:"Comprendre des conversations sur des sujets concrets liés à l'expérience personnelle ou à la culture générale.",7:"Comprendre des conversations sur des sujets concrets et parfois abstraits dans des contextes modérément exigeants.",8:"Comprendre des conversations complexes sur des sujets concrets et abstraits."},"IV. Information":{5:"Comprendre des exposés ou des présentations orales sur des sujets concrets et familiers.",6:"Comprendre des exposés ou des présentations orales sur des sujets concrets liés à l'expérience personnelle.",7:"Comprendre des exposés ou des présentations orales modérément complexes sur des sujets variés.",8:"Comprendre des exposés ou des présentations orales détaillés et modérément complexes sur des sujets abstraits."}}
+};
+
+const CRITERES={
+  "Expression écrite":{"I. Relations interpersonnelles":{5:[{star:true,txt:"Appuie les idées principales d'information complémentaire."},{star:false,txt:"Utilise correctement plusieurs verbes au passé composé."},{star:false,txt:"Utilise un ton et un niveau de langue appropriés au contexte."},{star:true,txt:"Utilise correctement des expressions et du vocabulaire pour exprimer ses sentiments (je suis ravi(e) ; c'était inoubliable)."}],6:[{star:true,txt:"Utilise correctement des verbes et des expressions pour donner son opinion (je pense que ; il est important de…)."},{star:false,txt:"Emploie quelques expressions idiomatiques (c'était le fun!)."}],7:[{star:true,txt:"Exprime des idées et des sentiments avec précision et nuance."},{star:false,txt:"Adapte le ton et le niveau de langue au destinataire et au contexte."},{star:false,txt:"Utilise correctement une variété de marqueurs de relation."}],8:[{star:true,txt:"Fait preuve de tact et rend le sens voulu de façon explicite et par sous-entendus."},{star:false,txt:"Utilise un vocabulaire étendu incluant des expressions abstraites."}]},"III. Affaires et services":{5:[{star:true,txt:"Transmet le message clairement et de façon structurée."},{star:false,txt:"Adapte le format et le contenu au contexte et au destinataire."},{star:true,txt:"Appuie les idées principales d'information complémentaire."}],6:[{star:true,txt:"Adapte le format et le contenu de son texte au contexte, au destinataire et à l'intention de communication."},{star:false,txt:"Appuie les idées principales d'idées secondaires et d'information complémentaire."},{star:true,txt:"Transmet clairement le message."}],7:[{star:true,txt:"Appuie les idées principales d'idées secondaires et d'information complémentaire."},{star:false,txt:"Adapte le format et le contenu au contexte, au destinataire et à l'intention de communication."},{star:true,txt:"Transmet clairement le message."}],8:[{star:true,txt:"Adapte le format et le contenu de son texte au contexte, au destinataire et à l'intention de communication."},{star:false,txt:"Transmet clairement le message avec précision et tact."},{star:true,txt:"Appuie les idées principales d'idées secondaires et d'information complémentaire."}]},"IV. Information":{5:[{star:true,txt:"Fournit des détails et des explications pour appuyer les idées principales."},{star:false,txt:"Structure correctement son texte (introduction, développement, conclusion)."},{star:true,txt:"Fait une description précise en utilisant un vocabulaire courant."},{star:false,txt:"Emploie les marqueurs de relation appropriés."}],6:[{star:true,txt:"Structure correctement son texte en un ou deux paragraphes bien organisés."},{star:false,txt:"Compare ou décrit de façon claire en utilisant un vocabulaire varié."},{star:true,txt:"Fournit des détails et des explications précises."}],7:[{star:true,txt:"Développe des idées de façon détaillée et utilise correctement les marqueurs de relation."},{star:false,txt:"Exprime une opinion clairement et l'appuie d'arguments."},{star:false,txt:"Produit un texte bien structuré et cohérent."}],8:[{star:true,txt:"Exprime ou analyse une opinion en fournissant des descriptions et des explications exactes et détaillées."},{star:false,txt:"Rédige un texte cohérent en utilisant correctement les marqueurs de relation."},{star:true,txt:"Présente les informations dans un ordre logique et fluide."}]},"II. Reproduction de l'information":{5:[{star:true,txt:"Orthographie correctement les mots tirés du texte d'origine."},{star:false,txt:"Véhicule un message clair et consigne lisiblement les détails importants."},{star:true,txt:"Inclut les points importants et les détails exacts."}],6:[{star:true,txt:"Rapporte les idées principales en les appuyant de détails exacts."},{star:false,txt:"Transmet l'information essentielle sans omissions majeures."}],7:[{star:true,txt:"Rapporte les idées principales et secondaires sans omissions majeures."},{star:false,txt:"Orthographie correctement les mots tirés du texte d'origine."},{star:true,txt:"Transmet l'information essentielle de façon claire et structurée."}]}},
+  "Expression orale":{"I. Relations interpersonnelles":{5:[{star:true,txt:"Gère convenablement les interventions à tour de rôle et les interruptions."},{star:false,txt:"Utilise un vocabulaire courant et des expressions appropriées."},{star:true,txt:"Exprime verbalement son incompréhension au besoin et encourage les autres à participer."}],6:[{star:false,txt:"Facilite la conversation en faisant des commentaires positifs."},{star:true,txt:"Esquive poliment une question et confirme ou demande des précisions."}],7:[{star:true,txt:"Relance la discussion en invitant les autres à y prendre part."},{star:false,txt:"Vérifie sa compréhension en ayant recours à la répétition ou à la paraphrase."}],8:[{star:true,txt:"Manifeste de l'empathie et adapte son ton selon la situation."},{star:false,txt:"Résout les malentendus avec tact."},{star:true,txt:"Utilise un vocabulaire précis et des structures complexes."}]},"IV. Information":{5:[{star:true,txt:"Pose des questions pertinentes et vérifie la compréhension des interlocuteurs."},{star:false,txt:"Présente les événements dans un ordre compréhensible avec une introduction, un développement et une conclusion."},{star:true,txt:"Utilise les marqueurs de relation entre les mots et les phrases."}],6:[{star:false,txt:"Résume les propos des autres pour vérifier sa compréhension."},{star:true,txt:"Fait des descriptions détaillées adéquates et fait preuve d'une certaine maîtrise du contact visuel."}],7:[{star:true,txt:"Développe et nuance ses idées avec précision."},{star:false,txt:"Utilise un discours enchaîné pour présenter l'information."},{star:true,txt:"Fait des descriptions ainsi que des comparaisons claires."}]},"III. Affaires et services":{5:[{star:true,txt:"Fournit de l'information et des explications claires."},{star:false,txt:"Utilise un ton approprié à la situation."},{star:true,txt:"Formule des conseils ou des suggestions de façon adéquate."}],6:[{star:true,txt:"Explique les conséquences possibles de l'inaction ou de certaines décisions."},{star:false,txt:"Formule des demandes indirectes et des suggestions pour convaincre autrui."}]}},
+  "Compréhension de l'écrit":{"I. Relations interpersonnelles":{5:[{star:true,txt:"Comprend l'idée principale ainsi que l'information explicite et parfois implicite."},{star:false,txt:"Définit le contexte, le niveau de langue et le style du texte."},{star:true,txt:"Comprend le rapport scripteur-lecteur ainsi que l'attitude et les sentiments du scripteur."}],6:[{star:true,txt:"Comprend l'information explicite et implicite du texte."},{star:false,txt:"Infère le sens de certains mots ou expressions à partir du contexte."}],7:[{star:true,txt:"Comprend l'information explicite et implicite ainsi que le point de vue du scripteur."},{star:false,txt:"Identifie le ton et le registre du texte."}]},"IV. Information":{5:[{star:true,txt:"Comprend l'idée principale ainsi que l'information explicite et parfois implicite."},{star:false,txt:"Distingue les faits des opinions dans le texte."},{star:true,txt:"Repère les éléments d'information pour établir des comparaisons."}],6:[{star:true,txt:"Comprend l'idée principale, certaines idées secondaires ainsi que l'information explicite et implicite."},{star:false,txt:"Reformule ou résume le texte."}],7:[{star:true,txt:"Interprète les faits et les opinions du texte."},{star:false,txt:"Compare des éléments d'information pour dégager des conclusions."},{star:true,txt:"Comprend l'organisation du texte et les liens entre ses parties."}]},"III. Affaires et services":{5:[{star:true,txt:"Comprend l'idée principale ainsi que l'information explicite et parfois implicite."},{star:false,txt:"Repère l'information pertinente dans le texte."}],6:[{star:true,txt:"Comprend l'idée principale, certaines idées secondaires ainsi que l'information explicite et implicite."},{star:false,txt:"Comprend l'intention et l'attitude du scripteur."}]}},
+  "Compréhension de l'oral":{"I. Relations interpersonnelles":{5:[{star:true,txt:"Comprend le sens général ainsi que l'information explicite et parfois implicite."},{star:false,txt:"Reconnaît le rôle et les rapports des interlocuteurs à partir d'indices."},{star:true,txt:"Comprend les expressions pour entamer ou clore la conversation."}],6:[{star:true,txt:"Comprend le sens général et l'information explicite et implicite."},{star:false,txt:"Saisit les idées implicites dans un message simple."}]},"IV. Information":{5:[{star:true,txt:"Comprend le sens général, l'information explicite et parfois implicite (Qui? Quand? Quoi? Où?)."},{star:false,txt:"Repère et note les informations clés demandées."}],6:[{star:true,txt:"Comprend le sens général et l'information principale et secondaire."},{star:false,txt:"Distingue les faits des opinions dans un message oral."}]}}
+};
+
+function getCriteres(hab,dom,nclc){try{return CRITERES[hab][dom][parseInt(nclc)]||dflt(nclc);}catch(e){return dflt(nclc);}}
+function dflt(n){return [{star:true,txt:"Accomplit la tâche de façon satisfaisante."},{star:false,txt:"Utilise un vocabulaire et des structures appropriés au NCLC "+n+"."},{star:true,txt:"Adapte son discours au contexte et au destinataire."}];}
+function getDescripteur(hab,dom,nclc){try{return DESCRIPTEURS[hab][dom][parseInt(nclc)]||"Accomplir des tâches de communication au NCLC "+nclc+".";}catch(e){return "Accomplir des tâches de communication au NCLC "+nclc+".";}}
+function getSucces(nclc,total){const n=parseInt(nclc);if(n<=4)return Math.max(2,total-1);if(n<=6)return Math.max(3,total-1);return Math.max(4,total-1);}
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let currentType='base', currentTheme=null;
+let coevalCriteres=[]; // [{txt, star, nclcLabel}]
+let coevalSuccesRules=[]; // [{nclcLabel, needed, total}]
+
+// ── NAV ───────────────────────────────────────────────────────────────────
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── THEMES ────────────────────────────────────────────────────────────────
+function buildThemeGrid(){
+  const g=document.getElementById('theme-grid');
+  THEMES.forEach(th=>{
+    const b=document.createElement('button');
+    b.className='theme-btn';
+    b.innerHTML=`<span class="t-icon">${th.icon}</span><span class="t-name">${th.name}</span><span class="t-dom">${th.domaine1?th.domaine1.split('.')[0]+'. …':'Libre'}</span>`;
+    b.onclick=()=>selectTheme(th,b);
+    g.appendChild(b);
+  });
+}
+function selectTheme(th,btn){
+  document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTheme=th;
+  const nclc=parseInt(document.getElementById('nclc1').value);
+  const k=Math.min(Math.max(nclc,5),9);
+  if(th.id==='libre'){
+    document.getElementById('auto-tag1').style.display='none';
+    document.getElementById('auto-tag2').style.display='none';
+    document.getElementById('auto-tag-tache').style.display='none';
+    document.getElementById('prefill-preview').style.display='none';
+    return;
+  }
+  if(th.domaine1){document.getElementById('domaine1').value=th.domaine1;document.getElementById('auto-tag1').style.display='';}
+  if(th.domaine2){document.getElementById('domaine2').value=th.domaine2;document.getElementById('auto-tag2').style.display='';}
+  const tache=th.taches[k]||th.taches[5]||'';
+  if(tache){document.getElementById('tache').value=tache;document.getElementById('auto-tag-tache').style.display='';}
+  const prev=document.getElementById('prefill-preview');
+  prev.style.display='block';
+  prev.innerHTML=`<strong>Rempli automatiquement :</strong> Domaine → ${th.domaine1}${th.domaine2?' + '+th.domaine2:''} · Tâche adaptée au NCLC ${nclc}. <span style="opacity:.7">Vous pouvez modifier librement.</span>`;
+}
+function setType(t,btn){
+  currentType=t;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  tog('f-nclc2',t==='multi2'||t==='multi3'||t==='multi2dom2');
+  tog('f-nclc3',t==='multi3');
+  tog('f-domaine2',t==='dom2'||t==='multi2dom2');
+  if(currentTheme&&currentTheme.id!=='libre') updateTache();
+}
+function tog(id,show){document.getElementById(id).classList.toggle('hidden',!show);}
+function syncNclc(){
+  const v=parseInt(document.getElementById('nclc1').value);
+  document.getElementById('nclc2').value=Math.min(12,v+1);
+  document.getElementById('nclc3').value=Math.min(12,v+2);
+  if(currentTheme&&currentTheme.id!=='libre') updateTache();
+}
+function updateTache(){
+  if(!currentTheme||!currentTheme.taches) return;
+  const nclc=parseInt(document.getElementById('nclc1').value);
+  const k=Math.min(Math.max(nclc,5),9);
+  const t=currentTheme.taches[k]||currentTheme.taches[5]||'';
+  if(t) document.getElementById('tache').value=t;
+}
+
+// ── GENERATE GRILLE ───────────────────────────────────────────────────────
+function generer(){
+  const tache=document.getElementById('tache').value.trim();
+  const errbox=document.getElementById('errbox');
+  if(!tache){document.getElementById('err-msg').textContent="Veuillez décrire la tâche d'évaluation.";errbox.style.display='flex';return;}
+  errbox.style.display='none';
+  const n1=document.getElementById('nclc1').value, n2=document.getElementById('nclc2').value, n3=document.getElementById('nclc3').value;
+  const hab=document.getElementById('habilete').value, d1=document.getElementById('domaine1').value, d2=document.getElementById('domaine2').value;
+  const t=currentType;
+  buildCoevalCriteres(t,n1,n2,n3,hab,d1,d2); // prepare for co-eval
+  const html=buildGrille(t,n1,n2,n3,hab,d1,d2,tache);
+  document.getElementById('grille-preview').innerHTML=html;
+  const sec=document.getElementById('preview-section');
+  sec.classList.add('visible');
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildCoevalCriteres(t,n1,n2,n3,hab,d1,d2){
+  const c1=getCriteres(hab,d1,n1), c2=getCriteres(hab,d1,n2), c3=getCriteres(hab,d1,n3);
+  const c2b=(t==='dom2'||t==='multi2dom2')?getCriteres(hab,d2,n1):[];
+  coevalCriteres=[];
+  coevalSuccesRules=[];
+  // holistique
+  coevalCriteres.push({txt:"L'apprenant est capable d'accomplir la tâche.",star:true,group:'hol',groupLabel:''});
+  if(t==='base'){
+    c1.forEach(c=>coevalCriteres.push({...c,group:'c1',groupLabel:''}));
+    coevalSuccesRules=[{nclcLabel:n1,needed:getSucces(n1,c1.length+1),total:c1.length+1}];
+  }else if(t==='multi2'||t==='multi2dom2'){
+    c1.forEach(c=>coevalCriteres.push({...c,group:'c1',groupLabel:'NCLC '+n1}));
+    c2.forEach(c=>coevalCriteres.push({...c,group:'c2',groupLabel:'NCLC '+n2}));
+    if(t==='multi2dom2') c2b.forEach(c=>coevalCriteres.push({...c,group:'c2b',groupLabel:d2}));
+    const tot1=c1.length+1, tot2=c1.length+c2.length+1+(t==='multi2dom2'?c2b.length:0);
+    coevalSuccesRules=[{nclcLabel:'NCLC '+n1,needed:getSucces(n1,tot1),total:tot1},{nclcLabel:'NCLC '+n2,needed:getSucces(n2,tot2),total:tot2}];
+  }else if(t==='multi3'){
+    c1.forEach(c=>coevalCriteres.push({...c,group:'c1',groupLabel:'NCLC '+n1}));
+    c2.forEach(c=>coevalCriteres.push({...c,group:'c2',groupLabel:'NCLC '+n2}));
+    c3.forEach(c=>coevalCriteres.push({...c,group:'c3',groupLabel:'NCLC '+n3}));
+    const tot1=c1.length+1, tot2=c1.length+c2.length+1, tot3=c1.length+c2.length+c3.length+1;
+    coevalSuccesRules=[{nclcLabel:'NCLC '+n1,needed:getSucces(n1,tot1),total:tot1},{nclcLabel:'NCLC '+n2,needed:getSucces(n2,tot2),total:tot2},{nclcLabel:'NCLC '+n3,needed:getSucces(n3,tot3),total:tot3}];
+  }else if(t==='dom2'){
+    c1.forEach(c=>coevalCriteres.push({...c,group:'c1',groupLabel:d1}));
+    c2b.forEach(c=>coevalCriteres.push({...c,group:'c2b',groupLabel:d2}));
+    coevalSuccesRules=[{nclcLabel:'NCLC '+n1,needed:getSucces(n1,c1.length+c2b.length+1),total:c1.length+c2b.length+1}];
+  }
+}
+
+function buildGrille(t,n1,n2,n3,hab,d1,d2,tache){
+  const c1=getCriteres(hab,d1,n1), c2=getCriteres(hab,d1,n2), c3=getCriteres(hab,d1,n3);
+  const c2b=(t==='dom2'||t==='multi2dom2')?getCriteres(hab,d2,n1):[];
+  let nclcLabel=n1;
+  if(t==='multi2'||t==='multi2dom2') nclcLabel=n1+'–'+n2;
+  if(t==='multi3') nclcLabel=n1+'–'+n2+'–'+n3;
+  let domaineLabel=d1;
+  if(t==='dom2'||t==='multi2dom2') domaineLabel=d1+' / '+d2;
+
+  let descBlock='';
+  if(t==='base') descBlock=`<tr><td class="label-cell">Descripteur de compétence clé</td><td colspan="2">${getDescripteur(hab,d1,n1)}</td></tr>`;
+  else if(t==='multi2'||t==='multi2dom2'){descBlock=`<tr><td class="label-cell">Descripteur NCLC ${n1}</td><td colspan="2">${getDescripteur(hab,d1,n1)}</td></tr><tr><td class="label-cell">Descripteur NCLC ${n2}</td><td colspan="2">${getDescripteur(hab,d1,n2)}</td></tr>`;if(t==='multi2dom2')descBlock+=`<tr><td class="label-cell">Descripteur — ${d2}</td><td colspan="2">${getDescripteur(hab,d2,n1)}</td></tr>`;}
+  else if(t==='multi3') descBlock=`<tr><td class="label-cell">Descripteur NCLC ${n1}</td><td colspan="2">${getDescripteur(hab,d1,n1)}</td></tr><tr><td class="label-cell">Descripteur NCLC ${n2}</td><td colspan="2">${getDescripteur(hab,d1,n2)}</td></tr><tr><td class="label-cell">Descripteur NCLC ${n3}</td><td colspan="2">${getDescripteur(hab,d1,n3)}</td></tr>`;
+  else if(t==='dom2') descBlock=`<tr><td class="label-cell">Descripteur — ${d1}</td><td colspan="2">${getDescripteur(hab,d1,n1)}</td></tr><tr><td class="label-cell">Descripteur — ${d2}</td><td colspan="2">${getDescripteur(hab,d2,n1)}</td></tr>`;
+
+  let rows=`<tr><th style="text-align:left;width:55%">Critères d'évaluation</th><th class="check-cell">Répond au critère</th><th class="check-cell">Pas tout à fait</th></tr>`;
+  rows+=`<tr class="hol-row"><td><span class="star">*</span> L'apprenant est capable d'accomplir la tâche.</td><td class="check-cell"></td><td class="check-cell"></td></tr>`;
+
+  if(t==='base'){rows+=sec('Critères analytiques','','');c1.forEach(c=>rows+=cr(c));const tot=c1.length+1;rows+=succesR(`${getSucces(n1,tot)} critères sur ${tot}, dont les critères avec astérisque (*)`);}
+  else if(t==='multi2'||t==='multi2dom2'){rows+=sec(`Critères analytiques — NCLC ${n1}`,'NCLC '+n1,'teal');c1.forEach(c=>rows+=cr(c));rows+=sec(`Critères supplémentaires — NCLC ${n2}`,'NCLC '+n2+' (en plus des précédents)','blue');c2.forEach(c=>rows+=cr(c));if(t==='multi2dom2'){rows+=sec(`Critères — ${d2}`,d2,'amber');c2b.forEach(c=>rows+=cr(c));}const tot1=c1.length+1,tot2=c1.length+c2.length+1+(t==='multi2dom2'?c2b.length:0);rows+=succesR(`<strong>NCLC ${n1} :</strong> ${getSucces(n1,tot1)} critères sur ${tot1}, dont les *<br><strong>NCLC ${n2} :</strong> ${getSucces(n2,tot2)} critères sur ${tot2}, dont les *`);}
+  else if(t==='multi3'){rows+=sec(`Critères analytiques — NCLC ${n1}`,'NCLC '+n1,'teal');c1.forEach(c=>rows+=cr(c));rows+=sec(`Critères supplémentaires — NCLC ${n2}`,'NCLC '+n2,'blue');c2.forEach(c=>rows+=cr(c));rows+=sec(`Critères supplémentaires — NCLC ${n3}`,'NCLC '+n3,'amber');c3.forEach(c=>rows+=cr(c));const tot1=c1.length+1,tot2=c1.length+c2.length+1,tot3=c1.length+c2.length+c3.length+1;rows+=succesR(`<strong>NCLC ${n1} :</strong> ${getSucces(n1,tot1)} sur ${tot1} (*)<br><strong>NCLC ${n2} :</strong> ${getSucces(n2,tot2)} sur ${tot2} (*)<br><strong>NCLC ${n3} :</strong> ${getSucces(n3,tot3)} sur ${tot3} (*)`);}
+  else if(t==='dom2'){rows+=sec(`Critères — ${d1}`,d1,'teal');c1.forEach(c=>rows+=cr(c));rows+=sec(`Critères — ${d2}`,d2,'blue');c2b.forEach(c=>rows+=cr(c));const tot=c1.length+c2b.length+1;rows+=succesR(`${getSucces(n1,tot)} critères sur ${tot}, dont les critères avec astérisque (*)`);}
+
+  rows+=`<tr class="success-row"><td colspan="3">Score : __________ / __________&nbsp;&nbsp;&nbsp;Succès de la tâche : <strong>OUI &nbsp;—&nbsp; PAS TOUT À FAIT</strong></td></tr>`;
+  rows+=`<tr class="feedback-row"><td><strong>Ce que vous avez bien réussi :</strong></td><td colspan="2"><strong>Ce qu'il faut travailler :</strong></td></tr>`;
+  let note='Les critères avec astérisque (*) sont obligatoires pour la réussite de la tâche.';
+  if(t==='multi2'||t==='multi3'||t==='multi2dom2') note+=' Les apprenants de chaque niveau sont évalués sur les critères de leur niveau et de tous les niveaux inférieurs.';
+  if(t==='dom2'||t==='multi2dom2') note+=' Les critères couvrent les deux domaines ciblés.';
+  rows+=`<tr class="note-row"><td colspan="3"><strong>Note pour l'instructeur :</strong> ${note}</td></tr>`;
+
+  return `<div style="margin-bottom:8px"><h3 style="font-size:16px;font-weight:600;margin-bottom:4px">Grille d'évaluation — ${hab}</h3><p style="font-size:13px;color:var(--gray-600)">NCLC ${nclcLabel} · ${domaineLabel}</p></div>
+  <table class="grille-table"><tr><td class="label-cell">NCLC</td><td colspan="2" style="font-weight:500">${nclcLabel}</td></tr><tr><td class="label-cell">Habileté</td><td colspan="2" style="font-weight:500">${hab}</td></tr><tr><td class="label-cell">Domaine</td><td colspan="2" style="font-weight:500">${domaineLabel}</td></tr>${descBlock}<tr><td class="label-cell">Tâche d'évaluation</td><td colspan="2">${tache}</td></tr><tr><td class="label-cell" style="background:#fff;padding:5px 10px" colspan="3"><span style="font-size:11px;color:var(--gray-400)">Nom : _____________________________ &nbsp;&nbsp; Date : _________________</span></td></tr>${rows}</table>`;
+}
+
+function sec(label,badge,color){const cls=color==='teal'?'section-teal':color==='blue'?'section-blue':color==='amber'?'section-amber':'row-head';const bcls=color==='teal'?'badge-teal':color==='blue'?'badge-blue':'badge-amber';const b=badge?`<span class="badge ${bcls}">${badge}</span>`:'';return `<tr><td class="${cls}" colspan="3">${label}${b}</td></tr>`;}
+function cr(c){return `<tr><td>${c.star?'<span class="star">*</span> ':''}${c.txt}</td><td class="check-cell"></td><td class="check-cell"></td></tr>`;}
+function succesR(txt){return `<tr class="success-row"><td colspan="3"><strong>Critères de succès de la tâche :</strong><br>${txt}</td></tr>`;}
+
+// ── CO-ÉVALUATION ─────────────────────────────────────────────────────────
+// ── CORRECTION PAR ANALYSE TEXTUELLE ─────────────────────────────────────
+let analysisResults=[], ltMatchesCached=[];
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function showCorrTab(tab){
+  ['annote','erreurs','suggestions'].forEach(t=>{
+    document.getElementById('pane-'+t).style.display=t===tab?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+async function analyserTexte(){
+  const texte=document.getElementById('texte-apprenant').value.trim();
+  const errEl=document.getElementById('analyse-err');
+  errEl.style.display='none';
+  if(texte.length<20){document.getElementById('analyse-err-msg').textContent='Veuillez coller le texte de l\'apprenant (minimum quelques phrases).';errEl.style.display='flex';return;}
+
+  const btn=document.getElementById('btn-analyser');
+  btn.innerHTML='<span style="display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>Analyse en cours…';
+  btn.disabled=true;
+
+  const mots=texte.split(/\s+/).filter(w=>w.length>0).length;
+  const phrases=texte.split(/[.!?…]+/).filter(s=>s.trim().length>5).length;
+  const parag=Math.max(1,texte.split(/\n{2,}/).filter(p=>p.trim().length>10).length);
+  document.getElementById('stats-texte').textContent=mots+' mots · '+phrases+' phrases · '+parag+' paragraphe'+(parag!==1?'s':'');
+  document.getElementById('stats-texte').style.display='block';
+
+  // LanguageTool API (gratuit, sans clé)
+  let ltMatches=[];
+  try{
+    const resp=await fetch('https://api.languagetool.org/v2/check',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({text:texte,language:'fr-FR',enabledOnly:'false'})});
+    if(resp.ok){const d=await resp.json();ltMatches=(d.matches||[]).filter(m=>m.rule.category.id!=='WHITESPACE');}
+  }catch(e){ltMatches=[];}
+  ltMatchesCached=ltMatches;
+
+  analysisResults=coevalCriteres.map((c,i)=>({critIndex:i,...evaluerCritere(c,texte,mots,phrases,parag)}));
+
+  const suggs=genererSuggestions(texte,mots,phrases,parag,ltMatches);
+  renderTexteAnnote(texte,ltMatches);
+  renderCorrections(ltMatches);
+  renderSuggestions(suggs);
+  renderCriteresAnalyse();
+
+  const nclcLabel=document.getElementById('nclc1').value;
+  document.getElementById('criteres-titre-sub').textContent='— NCLC '+nclcLabel+' · '+mots+' mots';
+  document.getElementById('nb-erreurs').textContent=ltMatches.length?'('+ltMatches.length+')':'';
+  document.getElementById('correction-stats').textContent='— '+mots+' mots · '+ltMatches.length+' point'+(ltMatches.length!==1?'s':'')+' à corriger';
+
+  document.getElementById('correction-detail-card').style.display='block';
+  document.getElementById('criteres-card').style.display='block';
+  document.getElementById('feedback-card').style.display='block';
+
+  btn.innerHTML='<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Analyser et corriger le texte';
+  btn.disabled=false;
+  document.getElementById('correction-detail-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderTexteAnnote(texte,matches){
+  const sorted=[...matches].sort((a,b)=>a.offset-b.offset);
+  let html='',pos=0;
+  sorted.forEach((m,idx)=>{
+    html+=escHtml(texte.slice(pos,m.offset));
+    const word=texte.slice(m.offset,m.offset+m.length);
+    const cat=m.rule.category.id;
+    const bg=cat==='TYPOS'?'#FEE2E2':cat==='GRAMMAR'?'#FEF3C7':'#E0F2FE';
+    const br=cat==='TYPOS'?'#EF4444':cat==='GRAMMAR'?'#F59E0B':'#3B82F6';
+    const sugg=m.replacements.length?m.replacements[0].value:'—';
+    html+=`<span style="background:${bg};border-bottom:2.5px solid ${br};cursor:pointer;border-radius:2px;padding:0 1px" onclick="showCorrTab('erreurs');setTimeout(()=>{const el=document.getElementById('corr-item-${idx}');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid ${br}';setTimeout(()=>el.style.outline='',1500);}},200)" title="${escHtml(m.message)}">${escHtml(word)}</span><sup style="font-size:10px;color:${br};cursor:pointer" title="→ ${escHtml(sugg)}">[${idx+1}]</sup>`;
+    pos=m.offset+m.length;
+  });
+  html+=escHtml(texte.slice(pos));
+  html=html.replace(/\n/g,'<br>');
+  document.getElementById('texte-annote').innerHTML=html||'<em style="color:var(--gray-400)">Aucun texte</em>';
+}
+
+function renderCorrections(matches){
+  const el=document.getElementById('corrections-list');
+  if(!matches.length){el.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--gray-400);font-size:13px">✅ Aucune erreur grammaticale ou orthographique détectée par LanguageTool.</div>';return;}
+  let html='';
+  matches.forEach((m,idx)=>{
+    const cat=m.rule.category.id;
+    const catLabel=cat==='TYPOS'?'Orthographe':cat==='GRAMMAR'?'Grammaire':cat==='STYLE'?'Style':cat==='PUNCTUATION'?'Ponctuation':'Suggestion';
+    const color=cat==='TYPOS'?'var(--red)':cat==='GRAMMAR'?'var(--amber)':'var(--blue)';
+    const bg=cat==='TYPOS'?'var(--red-light)':cat==='GRAMMAR'?'var(--amber-light)':'var(--blue-light)';
+    const origWord=escHtml(m.context.text.slice(m.context.offset,m.context.offset+m.context.length));
+    const suggestions=m.replacements.slice(0,3).map(r=>escHtml(r.value)).join(' · ')||'—';
+    html+=`<div id="corr-item-${idx}" style="padding:10px 14px;border-radius:8px;margin-bottom:7px;background:${bg};border-left:3px solid ${color};transition:outline .2s">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:600;color:${color};background:#fff;border-radius:4px;padding:1px 7px">[${idx+1}] ${catLabel}</span>
+        <span style="font-size:13px;font-weight:500">«${origWord}»</span>
+      </div>
+      <div style="font-size:13px;color:var(--gray-900);margin-bottom:${m.replacements.length?'4px':'0'}">${escHtml(m.message)}</div>
+      ${m.replacements.length?`<div style="font-size:13px">💡 <strong>Suggestion :</strong> ${suggestions}</div>`:''}
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function genererSuggestions(texte,mots,phrases,parag,ltMatches){
+  const suggs=[]; const t=texte.toLowerCase(); const nclc=parseInt(document.getElementById('nclc1').value)||5;
+  const minMots=nclc<=4?30:nclc<=6?60:nclc<=8?80:100;
+  if(mots<minMots) suggs.push({type:'structure',titre:'Développez votre texte',msg:`Votre texte compte <strong>${mots} mots</strong>. Pour le NCLC ${nclc}, un minimum de <strong>${minMots} mots</strong> est recommandé. Ajoutez des exemples, des détails ou des explications pour chaque idée principale.`});
+  const hasIntro=/\b(d'abord|tout d'abord|pour commencer|premièrement|bonjour|cher|chère|salut|je vous écris|je t'écris)\b/i.test(texte);
+  const hasConcl=/\b(enfin|en conclusion|pour conclure|finalement|en résumé|pour terminer|bref|en somme|pour finir)\b/i.test(texte);
+  const hasDev=/\b(ensuite|puis|de plus|en outre|également|aussi|par ailleurs|d'une part|d'autre part)\b/i.test(texte);
+  if(!hasIntro&&!hasConcl) suggs.push({type:'structure',titre:'Structurez votre texte',msg:`Ajoutez une <strong>introduction</strong> (ex. : «Bonjour ! Je souhaite vous parler de…») et une <strong>conclusion</strong> (ex. : «En résumé, je vous recommande vivement…»).`});
+  else if(!hasConcl) suggs.push({type:'structure',titre:'Ajoutez une conclusion',msg:`Votre texte semble s'arrêter sans conclusion. Ajoutez : <em>«En résumé…»</em>, <em>«Pour finir…»</em>, <em>«J'espère que…»</em>.`});
+  if(!hasDev&&phrases>=3) suggs.push({type:'vocabulaire',titre:'Utilisez des marqueurs de relation',msg:`Reliez vos idées avec des connecteurs : <em>«de plus»</em>, <em>«par ailleurs»</em>, <em>«en effet»</em>, <em>«cependant»</em>, <em>«c'est pourquoi»</em>. Cela rend votre texte plus fluide et cohérent.`});
+  const pcM=texte.match(/\b(ai|as|a|avons|avez|ont|suis|es|est|sommes|êtes|sont)\s+\w*(é|ée|és|ées|is|it|u|us|ert|erts|aint|aints|oint|oints|ouvert|mort|né|parti|allé|arrivé|venu|sorti|entré|rentré|tombé|resté|monté|descendu|devenu|apparu)\b/gi)||[];
+  if(pcM.length<2) suggs.push({type:'grammaire',titre:'Utilisez davantage le passé composé',msg:`Détectés : <strong>${pcM.length}</strong> forme(s). Pour raconter des événements passés, le passé composé est essentiel. Exemples : <em>«J'ai visité…»</em>, <em>«Nous avons découvert…»</em>, <em>«J'ai adoré l'ambiance de…»</em>.`});
+  const feelM=texte.match(/\b(ravi|ravie|content|contente|heureux|heureuse|enchanté|inoubliable|magnifique|extraordinaire|adoré|aimé|impressionné|émerveillé|enthousiaste|satisfait|merveilleux|superbe|fantastique|génial)\b/gi)||[];
+  if(feelM.length<1) suggs.push({type:'vocabulaire',titre:'Exprimez vos sentiments',msg:`Enrichissez votre texte avec des expressions émotives : <em>«C'était inoubliable !»</em>, <em>«Je suis ravi(e) d'avoir…»</em>, <em>«J'ai été émerveillé(e) par…»</em>, <em>«Quelle expérience magnifique !»</em>`});
+  const opM=texte.match(/\b(je pense que|je crois que|à mon avis|selon moi|je trouve que|je recommande|il est important de|je suggère|je conseille)\b/gi)||[];
+  if(opM.length<1&&nclc>=6) suggs.push({type:'vocabulaire',titre:'Donnez votre opinion',msg:`Au NCLC ${nclc}, exprimez votre point de vue : <em>«Je pense que…»</em>, <em>«À mon avis…»</em>, <em>«Je vous recommande vivement…»</em>, <em>«Il est important de…»</em>.`});
+  const wds=t.split(/\s+/).filter(w=>w.replace(/[^a-zàâéèêëîïôùûüç]/g,'').length>3);
+  const uniq=new Set(wds.map(w=>w.replace(/[^a-zàâéèêëîïôùûüç]/g,'')));
+  const ratio=wds.length>10?Math.round(uniq.size/wds.length*100):100;
+  if(ratio<45) suggs.push({type:'vocabulaire',titre:'Enrichissez votre vocabulaire',msg:`Ratio de mots uniques : <strong>${ratio}%</strong>. Évitez les répétitions en utilisant des synonymes : <em>«beau → magnifique, splendide»</em>, <em>«aller → se rendre, visiter, explorer»</em>, <em>«faire → réaliser, effectuer, accomplir»</em>.`});
+  if(ltMatches.length>5) suggs.push({type:'correction',titre:'Relisez attentivement votre texte',msg:`L'analyse a détecté <strong>${ltMatches.length} points</strong> à corriger. Consultez l'onglet <strong>Erreurs</strong> pour les détails et corrections suggérées.`});
+  if(!suggs.length) suggs.push({type:'bravo',titre:'Excellent travail !',msg:`L'analyse ne détecte pas de lacune majeure. Le texte est bien développé, structuré et varié. Consultez l'onglet <strong>Erreurs</strong> pour les derniers ajustements stylistiques.`});
+  return suggs;
+}
+
+function renderSuggestions(suggs){
+  const colors={structure:'var(--blue)',vocabulaire:'var(--teal)',grammaire:'var(--amber)',correction:'var(--red)',bravo:'var(--green)'};
+  const bgs={structure:'var(--blue-light)',vocabulaire:'var(--teal-light)',grammaire:'var(--amber-light)',correction:'var(--red-light)',bravo:'var(--green-light)'};
+  const icons={structure:'📐',vocabulaire:'📖',grammaire:'✍️',correction:'🔍',bravo:'🎉'};
+  let html='';
+  suggs.forEach(s=>{
+    const c=colors[s.type]||'var(--gray-600)',bg=bgs[s.type]||'var(--gray-50)';
+    html+=`<div style="padding:12px 14px;border-radius:8px;margin-bottom:8px;background:${bg};border-left:3px solid ${c}"><div style="font-size:13px;font-weight:600;color:${c};margin-bottom:4px">${icons[s.type]||'•'} ${s.titre}</div><div style="font-size:13px;color:var(--gray-900);line-height:1.6">${s.msg}</div></div>`;
+  });
+  document.getElementById('suggestions-list').innerHTML=html;
+}
+
+function lancerCoeval(){
+  if(!coevalCriteres.length){alert('Veuillez d\'abord générer une grille.');return;}
+  document.getElementById('coeval-empty').style.display='none';
+  document.getElementById('coeval-main').style.display='block';
+  document.getElementById('correction-detail-card').style.display='none';
+  document.getElementById('criteres-card').style.display='none';
+  document.getElementById('feedback-card').style.display='none';
+  document.getElementById('bilan-section').style.display='none';
+  document.getElementById('nom-apprenant').value='';
+  document.getElementById('texte-apprenant').value='';
+  document.getElementById('stats-texte').style.display='none';
+  document.getElementById('fb-reussi').value='';
+  document.getElementById('fb-travailler').value='';
+  document.getElementById('analyse-err').style.display='none';
+  document.getElementById('date-eval').value=new Date().toISOString().split('T')[0];
+  analysisResults=[]; ltMatchesCached=[];
+  showPage('page-coeval', document.getElementById('tab-coeval'));
+}
+
+function evaluerCritere(c, texte, mots, phrases, parag){
+  const t = texte.toLowerCase();
+  const txt = c.txt.toLowerCase();
+
+  // Holistique : longueur + cohérence globale
+  if(c.group==='hol'){
+    if(mots>=60) return {result:'oui', note:'Texte suffisamment développé ('+mots+' mots)'};
+    if(mots>=30) return {result:'incertain', note:'Texte court ('+mots+' mots) — à évaluer selon la tâche'};
+    return {result:'non', note:'Texte trop court ('+mots+' mots)'};
+  }
+
+  // Passé composé
+  if(txt.includes('passé composé')){
+    const re=/\b(ai|as|a|avons|avez|ont|suis|es|est|sommes|êtes|sont)\s+\w*(é|ée|és|ées|is|it|u|us|ert|erts|aint|aints|oint|oints|ouvert|mort|né|parti|allé|arrivé|venu|sorti|entré|rentré|tombé|resté|monté|descendu|devenu|apparu)\b/gi;
+    const m=texte.match(re)||[];
+    if(m.length>=3) return {result:'oui', note:m.length+' formes de passé composé détectées'};
+    if(m.length>=1) return {result:'incertain', note:'Seulement '+m.length+' forme(s) — vérifiez si suffisant'};
+    return {result:'non', note:'Aucun passé composé détecté'};
+  }
+
+  // Sentiments / vocabulaire émotif
+  if(txt.includes('sentiments')||txt.includes('émotions')||txt.includes('inoubliable')){
+    const re=/\b(ravi|ravie|content|contente|heureux|heureuse|enchanté|enchantée|inoubliable|magnifique|extraordinaire|formidable|adoré|aimé|apprécié|impressionné|émerveillé|fasciné|enthousiaste|satisfait|merveilleux|splendide|superbe|fantastique|génial|incroyable|fier|fière|comblé|rempli de joie|ému|touchée|surprise|épatée)\b/gi;
+    const m=[...new Set((texte.match(re)||[]).map(x=>x.toLowerCase()))];
+    if(m.length>=2) return {result:'oui', note:'Expressions de sentiments : '+m.join(', ')};
+    if(m.length===1) return {result:'incertain', note:'Une seule expression : «'+m[0]+'» — à compléter?'};
+    return {result:'non', note:'Aucune expression de sentiments détectée'};
+  }
+
+  // Opinion / recommandation
+  if(txt.includes('opinion')||txt.includes('recommandation')||txt.includes('pense que')||txt.includes('donner son opinion')){
+    const re=/\b(je pense que|je crois que|à mon avis|selon moi|d'après moi|je trouve que|il me semble que|je recommande|je vous recommande|il est important de|il vaut mieux|je suggère|je conseille|je préconise|à mon sens|de mon côté|pour ma part|j'estime que|je considère que)\b/gi;
+    const m=texte.match(re)||[];
+    if(m.length>=1) return {result:'oui', note:'Expressions d\'opinion : «'+m[0]+'»'+(m.length>1?' + '+(m.length-1)+' autre(s)':'')};
+    return {result:'non', note:'Aucune expression d\'opinion ou de recommandation trouvée'};
+  }
+
+  // Structure (introduction, développement, conclusion)
+  if(txt.includes('structure')||txt.includes('introduction')||txt.includes('conclusion')){
+    const reI=/\b(d'abord|tout d'abord|pour commencer|premièrement|en premier lieu|bonjour|cher|chère|salut|coucou|je vous écris|je t'écris)\b/gi;
+    const reD=/\b(ensuite|puis|de plus|en outre|également|aussi|par ailleurs|notamment|en effet|d'un côté|d'une part|en particulier|ainsi|de même)\b/gi;
+    const reC=/\b(enfin|en conclusion|pour conclure|finalement|en résumé|pour terminer|bref|en somme|en définitive|pour finir|je termine|j'espère)\b/gi;
+    const i=(texte.match(reI)||[]).length, d=(texte.match(reD)||[]).length, cn=(texte.match(reC)||[]).length;
+    const score=(i>0?1:0)+(d>0?1:0)+(cn>0?1:0);
+    if(score>=2) return {result:'oui', note:'Structure : intro('+i+') dév.('+d+') concl.('+cn+')'};
+    if(score===1) return {result:'incertain', note:'Structure partielle : intro('+i+') dév.('+d+') concl.('+cn+')'};
+    return {result:'non', note:'Peu de marqueurs de structure détectés'};
+  }
+
+  // Ton et niveau de langue appropriés
+  if(txt.includes('ton')&&(txt.includes('approprié')||txt.includes('niveau de langue'))){
+    const formal=/\b(madame|monsieur|veuillez|je vous prie|cordialement|sincèrement|dans l'attente|je me permets|suite à|à cet effet|par la présente|je sollicite)\b/gi;
+    const informal=/\b(salut|coucou|hey|les gars|sympa|cool|ok|okay|super|génial|vraiment|franchement|c'était|j'ai trop|tellement)\b/gi;
+    const fLen=(texte.match(formal)||[]).length, iLen=(texte.match(informal)||[]).length;
+    if(fLen>0||iLen>0) return {result:'oui', note:'Registre détecté : '+(fLen>iLen?'formel':'informel/courant')+' ('+Math.max(fLen,iLen)+' marqueurs)'};
+    return {result:'incertain', note:'Ton à évaluer manuellement selon le contexte de la tâche'};
+  }
+
+  // Expressions idiomatiques
+  if(txt.includes('idiomatiques')||txt.includes('idiom')){
+    const re=/\b(le fun|super|génial|vraiment bien|franchement|carrément|trop bien|incroyable|hallucinant|dingue|cool|sympa|chouette|époustouflant|épatant|bluffant|renversant|haut en couleur|avoir le coup de foudre|se régaler|tomber sous le charme|coup de cœur|ne pas en croire ses yeux)\b/gi;
+    const m=[...new Set((texte.match(re)||[]).map(x=>x.toLowerCase()))];
+    if(m.length>=1) return {result:'oui', note:'Expressions : '+m.join(', ')};
+    return {result:'non', note:'Peu d\'expressions idiomatiques détectées'};
+  }
+
+  // Information complémentaire / appuie les idées / détails
+  if(txt.includes('appuie')||txt.includes('complémentaire')||txt.includes('détails')||txt.includes('information complémentaire')){
+    const longPhrases = texte.split(/[.!?…]+/).filter(s=>s.trim().split(/\s+/).length>=8).length;
+    if(longPhrases>=3) return {result:'oui', note:longPhrases+' phrases développées avec détails'};
+    if(longPhrases>=1) return {result:'incertain', note:'Développement partiel ('+longPhrases+' phrase'+(longPhrases>1?'s':'')+' élaborée'+(longPhrases>1?'s':'')+')'};
+    return {result:'non', note:'Peu de développement des idées détecté'};
+  }
+
+  // Vocabulaire varié / lexical
+  if(txt.includes('vocabulaire')||txt.includes('lexique')||txt.includes('lexical')){
+    const mots2=t.split(/\s+/).filter(w=>w.replace(/[^a-zàâéèêëîïôùûüç]/g,'').length>3);
+    const unique=new Set(mots2.map(w=>w.replace(/[^a-zàâéèêëîïôùûüç]/g,'')));
+    const ratio=mots2.length>0?Math.round(unique.size/mots2.length*100):0;
+    if(ratio>=60) return {result:'oui', note:'Vocabulaire varié ('+ratio+'% de mots uniques)'};
+    if(ratio>=40) return {result:'incertain', note:'Vocabulaire à évaluer ('+ratio+'% de mots uniques)'};
+    return {result:'non', note:'Vocabulaire peu varié ('+ratio+'% de mots uniques)'};
+  }
+
+  // Orthographe (toujours manuel)
+  if(txt.includes('orthograph')){
+    return {result:'incertain', note:'Vérification orthographique manuelle requise'};
+  }
+
+  // Marqueurs de relation
+  if(txt.includes('marqueurs de relation')||txt.includes('connecteurs')){
+    const re=/\b(donc|car|parce que|puisque|ainsi|alors|cependant|néanmoins|pourtant|or|mais|en revanche|d'ailleurs|de plus|en effet|c'est pourquoi|c'est-à-dire|par exemple|notamment|surtout|en particulier)\b/gi;
+    const m=texte.match(re)||[];
+    if(m.length>=3) return {result:'oui', note:m.length+' marqueurs de relation utilisés'};
+    if(m.length>=1) return {result:'incertain', note:'Seulement '+m.length+' marqueur(s) — à enrichir?'};
+    return {result:'non', note:'Peu de marqueurs de relation'};
+  }
+
+  // Verbes / expressions pour donner son opinion (formulation alternative)
+  if(txt.includes('verbes')&&(txt.includes('opinion')||txt.includes('donner'))){
+    const re=/\b(trouver|penser|croire|estimer|considérer|suggérer|recommander|conseiller|proposer|souhaiter|vouloir|aimer)\b/gi;
+    const m=texte.match(re)||[];
+    if(m.length>=2) return {result:'oui', note:'Verbes d\'opinion présents ('+m.length+')'};
+    return {result:'incertain', note:'À vérifier manuellement'};
+  }
+
+  // Tact / nuance
+  if(txt.includes('tact')||txt.includes('nuance')||txt.includes('sous-entendu')){
+    return {result:'incertain', note:'Critère nuancé — évaluation manuelle recommandée'};
+  }
+
+  // Par défaut
+  return {result:'incertain', note:'Critère à évaluer manuellement'};
+}
+
+function renderCriteresAnalyse(){
+  const container = document.getElementById('criteres-analyse-list');
+  container.innerHTML='';
+  let lastGroup='';
+
+  coevalCriteres.forEach((c,i)=>{
+    const res = analysisResults[i];
+
+    // Section header
+    if(c.group!=='hol'&&c.groupLabel&&c.groupLabel!==lastGroup){
+      lastGroup=c.groupLabel;
+      const cls=c.group==='c1'?'section-teal':c.group==='c2'?'section-blue':c.group==='c2b'||c.group==='c3'?'section-amber':'row-head';
+      const d=document.createElement('div');
+      d.style.cssText='padding:7px 16px;font-size:12px;font-weight:600;border-bottom:1px solid #CCC;';
+      if(c.group==='c1') d.style.background='#E8F5EE', d.style.color='var(--teal)';
+      else if(c.group==='c2') d.style.background='#E6F1FB', d.style.color='var(--blue)';
+      else d.style.background='var(--amber-light)', d.style.color='var(--amber)';
+      d.textContent='Critères analytiques — '+c.groupLabel;
+      container.appendChild(d);
+    }
+
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 16px;border-bottom:1px solid #EEE;align-items:start;'+(c.group==='hol'?'background:#F9F9F9;':'');
+
+    const colR=res.result==='oui'?'var(--green)':res.result==='non'?'var(--red)':'var(--amber)';
+    const bgR=res.result==='oui'?'var(--green-light)':res.result==='non'?'var(--red-light)':'var(--amber-light)';
+    const labelR=res.result==='oui'?'✓ Oui':res.result==='non'?'✗ Non':'? À vérifier';
+
+    row.innerHTML=`
+      <div>
+        <div style="font-size:13px;margin-bottom:4px">${c.star?'<span style="color:var(--red);font-weight:700">* </span>':''}${c.txt}</div>
+        <div style="font-size:12px;color:var(--gray-400);font-style:italic">${res.note}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+        <div id="badge-${i}" style="background:${bgR};color:${colR};font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px;white-space:nowrap">${labelR}</div>
+        <div style="display:flex;gap:4px">
+          <button onclick="setResult(${i},'oui')" style="font-size:11px;border:1px solid var(--green);border-radius:4px;padding:2px 8px;cursor:pointer;background:${res.result==='oui'?'var(--green)':'#fff'};color:${res.result==='oui'?'#fff':'var(--green)'};" id="btn-oui-${i}">✓ Oui</button>
+          <button onclick="setResult(${i},'non')" style="font-size:11px;border:1px solid var(--red);border-radius:4px;padding:2px 8px;cursor:pointer;background:${res.result==='non'?'var(--red)':'#fff'};color:${res.result==='non'?'#fff':'var(--red)'};" id="btn-non-${i}">✗ Non</button>
+        </div>
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+function setResult(i, val){
+  analysisResults[i].result=val;
+  const colR=val==='oui'?'var(--green)':'var(--red)';
+  const bgR=val==='oui'?'var(--green-light)':'var(--red-light)';
+  const labelR=val==='oui'?'✓ Oui':'✗ Non';
+  document.getElementById('badge-'+i).style.background=bgR;
+  document.getElementById('badge-'+i).style.color=colR;
+  document.getElementById('badge-'+i).textContent=labelR;
+  const bO=document.getElementById('btn-oui-'+i), bN=document.getElementById('btn-non-'+i);
+  bO.style.background=val==='oui'?'var(--green)':'#fff'; bO.style.color=val==='oui'?'#fff':'var(--green)';
+  bN.style.background=val==='non'?'var(--red)':'#fff';   bN.style.color=val==='non'?'#fff':'var(--red)';
+}
+
+function genererBilan(){
+  const nom=document.getElementById('nom-apprenant').value||'L\'apprenant(e)';
+  const fbR=document.getElementById('fb-reussi').value;
+  const fbT=document.getElementById('fb-travailler').value;
+  const texte=document.getElementById('texte-apprenant').value;
+  const mots=texte.trim().split(/\s+/).filter(w=>w.length>0).length;
+
+  if(!analysisResults.length){alert('Veuillez d\'abord analyser le texte.');return;}
+
+  const insOui=analysisResults.filter(r=>r.result==='oui').length;
+  const insNon=analysisResults.filter(r=>r.result==='non').length;
+  const total=analysisResults.length;
+
+  // Succès par règles
+  let successLines=[];
+  coevalSuccesRules.forEach(rule=>{
+    let count=0;
+    let starOk=true;
+    let idx=0;
+    coevalCriteres.forEach((c,i)=>{
+      if(idx<rule.total){
+        if(analysisResults[i]&&analysisResults[i].result==='oui') count++;
+        if(c.star&&analysisResults[i]&&analysisResults[i].result!=='oui') starOk=false;
+        idx++;
+      }
+    });
+    successLines.push({label:rule.nclcLabel,count,needed:rule.needed,total:rule.total,success:count>=rule.needed&&starOk,starOk});
+  });
+
+  const globalSuccess=successLines.every(s=>s.success);
+  const incertains=analysisResults.filter(r=>r.result==='incertain').length;
+
+  let html=`<div class="bilan-card">
+    <div class="bilan-header ${globalSuccess?'success':incertains>0?'pending':'fail'}">
+      ${globalSuccess?'✅':incertains>0?'⚠️':'❌'}
+      <span>${nom} — ${globalSuccess?'Tâche réussie':incertains>0?'À confirmer (critères incertains)':'Tâche non réussie'}</span>
+    </div>
+    <div class="bilan-body">
+      <div class="bilan-score-row">
+        <div class="score-box instructeur"><div class="score-num">${insOui}/${total}</div><div class="score-lbl">critères satisfaits</div></div>
+        <div class="score-box" style="background:var(--gray-50)"><div class="score-num" style="font-size:20px;color:var(--gray-600)">${mots}</div><div class="score-lbl">mots dans le texte</div></div>
+      </div>`;
+
+  successLines.forEach(s=>{
+    html+=`<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem;border-radius:var(--radius);margin-bottom:4px;font-size:13px;background:${s.success?'var(--green-light)':incertains>0?'var(--amber-light)':'var(--red-light)'};color:${s.success?'var(--green)':incertains>0?'var(--amber)':'var(--red)'}">
+      <span>${s.success?'✅':incertains>0?'⚠️':'❌'}</span>
+      <span><strong>${s.label} :</strong> ${s.count} critères sur ${s.total} (seuil : ${s.needed})${!s.starOk?' — critère obligatoire (*) non satisfait':''}</span>
+    </div>`;
+  });
+
+  if(incertains>0){
+    html+=`<div style="padding:.55rem .75rem;border-radius:var(--radius);background:var(--amber-light);color:var(--amber);font-size:13px;margin-bottom:.75rem">
+      ⚠️ <strong>${incertains} critère${incertains>1?'s':''} marqué${incertains>1?'s':''} «À vérifier»</strong> — confirmez manuellement avec Oui ou Non ci-dessus, puis regénérez le bilan.
+    </div>`;
+  }
+
+  // Détail critères
+  html+=`<div class="divergence-list"><h4>Détail par critère</h4>`;
+  coevalCriteres.forEach((c,i)=>{
+    const r=analysisResults[i];
+    if(!r) return;
+    const clsItem=r.result==='oui'?'app-oui':r.result==='non'?'app-non':'';
+    html+=`<div class="div-item ${clsItem}" style="${r.result==='incertain'?'background:var(--amber-light)':''}">
+      <span class="div-icon">${c.star?'⭐':'•'}</span>
+      <div>
+        <div style="font-weight:500;font-size:13px">${c.star?'<span style="color:var(--red)">* </span>':''}${c.txt}</div>
+        <div style="font-size:12px;margin-top:2px;color:var(--gray-600)">
+          <strong style="color:${r.result==='oui'?'var(--green)':r.result==='non'?'var(--red)':'var(--amber)'}">${r.result==='oui'?'✓ Oui':r.result==='non'?'✗ Non':'? À vérifier'}</strong>
+          ${r.note?' — '+r.note:''}
+        </div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  if(fbR||fbT){
+    html+=`<div class="bilan-feedback">`;
+    if(fbR) html+=`<div class="bilan-fb-box"><h4>Ce que l'apprenant a bien réussi</h4><p>${fbR}</p></div>`;
+    if(fbT) html+=`<div class="bilan-fb-box"><h4>Ce qu'il faut travailler</h4><p>${fbT}</p></div>`;
+    html+=`</div>`;
+  }
+  html+=`</div></div>`;
+
+  document.getElementById('bilan-output').innerHTML=html;
+  document.getElementById('bilan-section').style.display='block';
+  document.getElementById('bilan-section').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function reinitCoeval(){
+  document.getElementById('bilan-section').style.display='none';
+  document.getElementById('correction-detail-card').style.display='none';
+  document.getElementById('criteres-card').style.display='none';
+  document.getElementById('feedback-card').style.display='none';
+  document.getElementById('nom-apprenant').value='';
+  document.getElementById('texte-apprenant').value='';
+  document.getElementById('stats-texte').style.display='none';
+  document.getElementById('fb-reussi').value='';
+  document.getElementById('fb-travailler').value='';
+  analysisResults=[]; ltMatchesCached=[];
+  showCorrTab('annote');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function copierTexte(){
+  navigator.clipboard.writeText(document.getElementById('grille-preview').innerText).then(()=>{
+    const btn=event.target.closest('button');const o=btn.innerHTML;
+    btn.innerHTML='✓ Copié !';setTimeout(()=>btn.innerHTML=o,2000);
+  });
+}
+function nouvelleGrille(){
+  document.getElementById('preview-section').classList.remove('visible');
+  document.getElementById('tache').value='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── VIRTUAL / CODE SYSTEM ─────────────────────────────────────────────────
+function genererCodeGrilleStr(){
+  const data={type:currentType,n1:document.getElementById('nclc1').value,n2:document.getElementById('nclc2').value,n3:document.getElementById('nclc3').value,hab:document.getElementById('habilete').value,d1:document.getElementById('domaine1').value,d2:document.getElementById('domaine2').value,tache:document.getElementById('tache').value.trim(),criteres:coevalCriteres,succesRules:coevalSuccesRules};
+  return 'GRILLE:'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+
+function afficherCodeGrille(){
+  if(!coevalCriteres.length){alert('Veuillez d\'abord générer une grille.');return;}
+  const code=genererCodeGrilleStr();
+  document.getElementById('modal-code-out').value=code;
+  const m=document.getElementById('modal-overlay');
+  m.style.display='flex';
+}
+
+function fermerModal(){
+  document.getElementById('modal-overlay').style.display='none';
+}
+
+function copierCodeGrille(){
+  const v=document.getElementById('modal-code-out').value;
+  navigator.clipboard.writeText(v).then(()=>{
+    const btn=event.target.closest('button');const o=btn.innerHTML;
+    btn.innerHTML='✓ Copié !';setTimeout(()=>btn.innerHTML=o,2000);
+  });
+}
+
+// ── MODE APPRENANT ────────────────────────────────────────────────────────
+let appCriteres=[], appSuccesRules=[];
+
+function chargerGrilleApprenant(){
+  const raw=document.getElementById('app-code-input').value.trim();
+  const errEl=document.getElementById('app-err');
+  errEl.style.display='none';
+  if(!raw.startsWith('GRILLE:')){
+    document.getElementById('app-err-msg').textContent='Code invalide. Assurez-vous de coller le code complet fourni par votre instructeur (commence par GRILLE:).';
+    errEl.style.display='flex';return;
+  }
+  try{
+    const json=JSON.parse(decodeURIComponent(escape(atob(raw.replace('GRILLE:','')))));
+    appCriteres=json.criteres||[];
+    appSuccesRules=json.succesRules||[];
+    document.getElementById('app-grille-titre').textContent='Auto-évaluation — '+json.hab+' NCLC '+(json.n1||'')+(json.n2&&json.type!=='base'?'–'+json.n2:'');
+    buildAppTable();
+    document.getElementById('app-grille-section').style.display='block';
+    document.getElementById('app-code-result').style.display='none';
+    document.getElementById('app-grille-section').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    document.getElementById('app-err-msg').textContent='Erreur de lecture du code. Vérifiez qu\'il est complet et non modifié.';
+    errEl.style.display='flex';
+  }
+}
+
+function buildAppTable(){
+  const tbody=document.getElementById('app-tbody');
+  tbody.innerHTML='';
+  let lastGroup='';
+  appCriteres.forEach((c,i)=>{
+    if(c.group!=='hol'&&c.groupLabel&&c.groupLabel!==lastGroup){
+      lastGroup=c.groupLabel;
+      const cls=c.group==='c1'?'sec-teal':c.group==='c2'?'sec-blue':'sec-amber';
+      const tr=document.createElement('tr');
+      tr.className='sec-row '+cls;
+      tr.innerHTML=`<td colspan="2">Critères analytiques — ${c.groupLabel}</td>`;
+      tbody.appendChild(tr);
+    }
+    const tr=document.createElement('tr');
+    if(c.group==='hol') tr.className='hol-row';
+    tr.innerHTML=`<td>${c.star?'<span class="star">*</span> ':''}${c.txt}</td>
+      <td style="text-align:center"><div class="toggle-group">
+        <input type="radio" name="apponly_${i}" id="ao_oui_${i}" value="oui">
+        <label for="ao_oui_${i}" class="oui-lbl">✓ Oui</label>
+        <input type="radio" name="apponly_${i}" id="ao_non_${i}" value="non">
+        <label for="ao_non_${i}" class="non-lbl">✗ Non</label>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function genererCodeSoumission(){
+  const nom=document.getElementById('app-nom').value.trim()||'Apprenant';
+  const date=document.getElementById('app-date').value||new Date().toISOString().split('T')[0];
+  let reps=[], missing=false;
+  appCriteres.forEach((_,i)=>{
+    const v=document.querySelector(`input[name="apponly_${i}"]:checked`);
+    if(!v){missing=true;}else{reps.push(v.value==='oui');}
+  });
+  if(missing){alert('Veuillez cocher Oui ou Non pour chaque critère avant de soumettre.');return;}
+  const data={nom,date,reps};
+  const code='REP:'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  document.getElementById('app-code-out').value=code;
+  document.getElementById('app-code-result').style.display='block';
+  document.getElementById('app-code-result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copierCodeSoumission(){
+  const v=document.getElementById('app-code-out').value;
+  navigator.clipboard.writeText(v).then(()=>{
+    const btn=event.target.closest('button');const o=btn.innerHTML;
+    btn.innerHTML='✓ Copié !';setTimeout(()=>btn.innerHTML=o,2000);
+  });
+}
+
+// ── CORRECTION VIRTUELLE : charger réponses apprenant ────────────────────
+function chargerReponsesApprenant(){
+  const raw=document.getElementById('ins-code-input').value.trim();
+  const errEl=document.getElementById('ins-import-err');
+  const okEl=document.getElementById('ins-import-ok');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(!raw.startsWith('REP:')){
+    document.getElementById('ins-import-err-msg').textContent='Code invalide. Il doit commencer par REP: — vérifiez que l\'apprenant vous a bien transmis son code de soumission.';
+    errEl.style.display='flex';return;
+  }
+  try{
+    const data=JSON.parse(decodeURIComponent(escape(atob(raw.replace('REP:','')))));
+    // Pre-fill nom/date
+    if(data.nom) document.getElementById('nom-apprenant').value=data.nom;
+    if(data.date) document.getElementById('date-eval').value=data.date;
+    // Pre-fill student radio buttons
+    if(data.reps&&Array.isArray(data.reps)){
+      data.reps.forEach((v,i)=>{
+        const sel=document.querySelector(`input[name="app_${i}"][value="${v?'oui':'non'}"]`);
+        if(sel) sel.checked=true;
+      });
+    }
+    okEl.style.display='block';
+  }catch(e){
+    document.getElementById('ins-import-err-msg').textContent='Erreur de lecture du code. Vérifiez qu\'il est complet et non modifié.';
+    errEl.style.display='flex';
+  }
+}
+
+// ── RÉTROACTION AUTOMATIQUE ───────────────────────────────────────────────
+function genererRetroactionAuto(){
+  if(!analysisResults.length){alert('Analysez d\'abord le texte avant de générer la rétroaction.');return;}
+
+  const reussites=[], ameliorations=[];
+  const nclc=parseInt(document.getElementById('nclc1').value)||5;
+  const texte=document.getElementById('texte-apprenant').value.trim();
+  const mots=texte.split(/\s+/).filter(w=>w.length>0).length;
+
+  // Holistique
+  const hol=analysisResults[0];
+  if(hol&&hol.result==='oui') reussites.push('Tu as réussi à accomplir la tâche demandée de façon satisfaisante. Ton texte est suffisamment développé ('+mots+' mots).');
+  else ameliorations.push('Travaille à compléter davantage ta réponse. Pour le NCLC '+nclc+', vise au moins '+(nclc<=4?30:nclc<=6?60:80)+' mots.');
+
+  // Critères analytiques
+  coevalCriteres.slice(1).forEach((c,i)=>{
+    const res=analysisResults[i+1];
+    if(!res) return;
+    const txt=c.txt.toLowerCase();
+    const note=res.note||'';
+
+    if(res.result==='oui'){
+      // Messages positifs personnalisés
+      if(txt.includes('passé composé')) reussites.push('Tu as utilisé le passé composé correctement pour raconter tes expériences ('+note+').');
+      else if(txt.includes('sentiments')||txt.includes('émotions')) reussites.push('Tu as enrichi ton texte avec des expressions pour partager tes sentiments ('+note+').');
+      else if(txt.includes('opinion')||txt.includes('recommandation')) reussites.push('Tu as clairement exprimé ton opinion et tes recommandations. Bravo !');
+      else if(txt.includes('structure')||txt.includes('introduction')||txt.includes('conclusion')) reussites.push('Ton texte est bien structuré avec une introduction, un développement et une conclusion claire.');
+      else if(txt.includes('ton')||txt.includes('niveau de langue')) reussites.push('Le ton et le niveau de langue sont bien adaptés au contexte ('+note+').');
+      else if(txt.includes('idiomatiques')||txt.includes('idiom')) reussites.push('Tu as utilisé des expressions idiomatiques naturelles qui donnent du caractère à ton texte.');
+      else if(txt.includes('appuie')||txt.includes('complémentaire')||txt.includes('détails')) reussites.push('Tu as bien développé tes idées en les appuyant de détails et d\'exemples concrets.');
+      else if(txt.includes('vocabulaire')||txt.includes('lexique')) reussites.push('Ton vocabulaire est varié et approprié au niveau NCLC '+nclc+' ('+note+').');
+      else if(txt.includes('marqueurs de relation')) reussites.push('Tu as utilisé des marqueurs de relation pour relier tes idées et rendre le texte fluide.');
+      else reussites.push('Tu as satisfait le critère : «'+c.txt+'».');
+    } else {
+      // Messages d'amélioration personnalisés et actionnables
+      if(txt.includes('passé composé')){
+        const nb=parseInt(note)||0;
+        ameliorations.push('Utilise davantage le passé composé pour raconter les événements ('+note+'). Entraîne-toi avec : «j\'ai visité», «nous avons découvert», «c\'était»... Pour les verbes de mouvement, n\'oublie pas l\'auxiliaire être : «je suis allé(e)», «nous sommes arrivés».');
+      } else if(txt.includes('sentiments')||txt.includes('émotions')){
+        ameliorations.push('Exprime tes émotions pour rendre ton texte plus vivant. Essaie : «C\'était inoubliable !», «Je suis ravi(e) d\'avoir...», «J\'ai été émerveillé(e) par...», «Quelle expérience magnifique !»');
+      } else if(txt.includes('opinion')||txt.includes('recommandation')){
+        ameliorations.push('Donne ton opinion et tes recommandations. Par exemple : «À mon avis, ...», «Je pense que ...», «Je vous recommande vivement de...», «Il est important de...»');
+      } else if(txt.includes('structure')||txt.includes('introduction')||txt.includes('conclusion')){
+        ameliorations.push('Structure mieux ton texte : commence par une introduction (ex. : «Bonjour ! Aujourd\'hui, je souhaite vous parler de...»), développe avec des marqueurs (ensuite, de plus, par ailleurs) et termine par une conclusion (ex. : «En résumé, je vous recommande vivement...»).');
+      } else if(txt.includes('ton')||txt.includes('niveau de langue')){
+        ameliorations.push('Adapte ton registre de langue au contexte de la tâche. Pour un blogue ou réseau social, un ton informel mais poli est approprié. Évite de mélanger les registres très formels et très familiers.');
+      } else if(txt.includes('idiomatiques')||txt.includes('idiom')){
+        ameliorations.push('Enrichis ton texte avec des expressions idiomatiques : «C\'était le fun !», «Un must à voir !», «Coup de cœur garanti !», «Je suis tombé(e) sous le charme de...»');
+      } else if(txt.includes('appuie')||txt.includes('complémentaire')||txt.includes('détails')){
+        ameliorations.push('Développe tes idées principales en ajoutant des détails spécifiques, des exemples concrets ou des explications. Chaque idée principale devrait être suivie d\'au moins une phrase de développement.');
+      } else if(txt.includes('vocabulaire')||txt.includes('lexique')){
+        ameliorations.push('Varie ton vocabulaire en utilisant des synonymes. Évite de répéter les mêmes mots : «beau → magnifique, splendide, remarquable», «aller → se rendre, visiter, explorer».');
+      } else if(txt.includes('marqueurs de relation')){
+        ameliorations.push('Relie tes idées avec des marqueurs de relation : «D\'abord...», «Ensuite...», «De plus...», «Par ailleurs...», «Enfin...», «En conclusion...», «C\'est pourquoi...»');
+      } else {
+        ameliorations.push('Travaille sur : «'+c.txt+'». '+note+'.');
+      }
+    }
+  });
+
+  // Erreurs LanguageTool
+  if(ltMatchesCached.length>0){
+    const types={};
+    ltMatchesCached.forEach(m=>{ const t=m.rule.category.id; types[t]=(types[t]||0)+1; });
+    const details=Object.entries(types).map(([t,n])=>{
+      const label=t==='TYPOS'?'orthographe':t==='GRAMMAR'?'grammaire':t==='PUNCTUATION'?'ponctuation':'style';
+      return n+' erreur'+(n>1?'s':'')+' de '+label;
+    }).join(', ');
+    ameliorations.push('Relis attentivement ton texte et corrige les erreurs identifiées ('+details+'). Consulte la liste détaillée dans le rapport d\'analyse.');
+  }
+
+  if(!reussites.length) reussites.push('Continue tes efforts ! Avec de la pratique, tu progresseras.');
+  if(!ameliorations.length) ameliorations.push('Excellent travail ! Continue à enrichir ton vocabulaire et à pratiquer régulièrement.');
+
+  document.getElementById('fb-reussi').value=reussites.join('\n\n');
+  document.getElementById('fb-travailler').value=ameliorations.join('\n\n');
+}
+
+// ── TÉLÉCHARGEMENT COPIE WORD ─────────────────────────────────────────────
+function telechargerCopieWord(){
+  const nom=document.getElementById('nom-apprenant').value||'Apprenant';
+  const date=document.getElementById('date-eval').value||new Date().toISOString().split('T')[0];
+  const texte=document.getElementById('texte-apprenant').value.trim();
+  const nclc=document.getElementById('nclc1').value;
+  const hab=document.getElementById('habilete').value;
+  const d1=document.getElementById('domaine1').value;
+  const tache=document.getElementById('tache').value;
+  const fbR=document.getElementById('fb-reussi').value;
+  const fbT=document.getElementById('fb-travailler').value;
+  const mots=texte.split(/\s+/).filter(w=>w.length>0).length;
+
+  if(!analysisResults.length){alert('Analysez d\'abord le texte avant de télécharger.');return;}
+
+  const insOui=analysisResults.filter(r=>r.result==='oui').length;
+  const total=analysisResults.length;
+  const globalSuccess=coevalSuccesRules.every(rule=>{
+    let count=0,starOk=true,idx=0;
+    coevalCriteres.forEach((c,i)=>{if(idx<rule.total){if(analysisResults[i]&&analysisResults[i].result==='oui')count++;if(c.star&&analysisResults[i]&&analysisResults[i].result!=='oui')starOk=false;idx++;}});
+    return count>=rule.needed&&starOk;
+  });
+
+  // Build corrections list
+  let correctionsHtml='<p style="color:#888;font-style:italic">Aucune erreur détectée par l\'analyseur linguistique.</p>';
+  if(ltMatchesCached.length){
+    correctionsHtml='<ol style="margin-left:18px">';
+    ltMatchesCached.forEach((m,i)=>{
+      const cat=m.rule.category.id;
+      const catLabel=cat==='TYPOS'?'Orthographe':cat==='GRAMMAR'?'Grammaire':cat==='PUNCTUATION'?'Ponctuation':'Style';
+      const word=m.context.text.slice(m.context.offset,m.context.offset+m.context.length);
+      const sugg=m.replacements.slice(0,2).map(r=>r.value).join(' / ')||'—';
+      correctionsHtml+=`<li style="margin-bottom:6px"><strong>[${catLabel}]</strong> «${word}» — ${m.message}${m.replacements.length?' → <strong>'+sugg+'</strong>':''}</li>`;
+    });
+    correctionsHtml+='</ol>';
+  }
+
+  // Build criteria table
+  let criteresHtml='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  criteresHtml+='<tr style="background:#1D9E75;color:#fff"><th style="padding:6px 8px;text-align:left;border:1px solid #ccc">Critère d\'évaluation</th><th style="padding:6px 8px;width:80px;text-align:center;border:1px solid #ccc">Résultat</th><th style="padding:6px 8px;text-align:left;border:1px solid #ccc">Observation</th></tr>';
+  let lastGrp='';
+  coevalCriteres.forEach((c,i)=>{
+    const res=analysisResults[i];
+    if(!res) return;
+    if(c.group!=='hol'&&c.groupLabel&&c.groupLabel!==lastGrp){
+      lastGrp=c.groupLabel;
+      criteresHtml+=`<tr style="background:#E8F5EE"><td colspan="3" style="padding:5px 8px;font-weight:bold;font-size:11px;border:1px solid #ccc;color:#0F6E56">Critères analytiques — ${c.groupLabel}</td></tr>`;
+    }
+    const bg=c.group==='hol'?'#F5F5F5':'#fff';
+    const badge=res.result==='oui'?'<span style="background:#3B6D11;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px">✓ Oui</span>':res.result==='non'?'<span style="background:#A32D2D;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px">✗ Non</span>':'<span style="background:#854F0B;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px">? À vérifier</span>';
+    criteresHtml+=`<tr style="background:${bg}"><td style="padding:6px 8px;border:1px solid #ccc">${c.star?'<strong>* </strong>':''}${c.txt}</td><td style="padding:6px 8px;text-align:center;border:1px solid #ccc">${badge}</td><td style="padding:6px 8px;font-size:11px;color:#555;border:1px solid #ccc">${res.note||''}</td></tr>`;
+  });
+  criteresHtml+='</table>';
+
+  // Success banner
+  const successHtml=globalSuccess
+    ?'<div style="background:#EAF3DE;border-left:4px solid #3B6D11;padding:10px 14px;margin:12px 0;border-radius:4px"><strong style="color:#3B6D11">✅ TÂCHE RÉUSSIE</strong> — Score : '+insOui+'/'+total+' critères satisfaits</div>'
+    :'<div style="background:#FCEBEB;border-left:4px solid #A32D2D;padding:10px 14px;margin:12px 0;border-radius:4px"><strong style="color:#A32D2D">❌ TÂCHE NON RÉUSSIE</strong> — Score : '+insOui+'/'+total+' critères satisfaits</div>';
+
+  const fbReussiHtml=fbR?fbR.split('\n').filter(l=>l.trim()).map(l=>'<p style="margin:4px 0">'+l+'</p>').join(''):'<p style="color:#888;font-style:italic">—</p>';
+  const fbTravaillerHtml=fbT?fbT.split('\n').filter(l=>l.trim()).map(l=>'<p style="margin:4px 0">'+l+'</p>').join(''):'<p style="color:#888;font-style:italic">—</p>';
+
+  const dateFormatee=new Date(date).toLocaleDateString('fr-CA',{year:'numeric',month:'long',day:'numeric'})||date;
+  const texteFormate=texte.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+
+  const wordHtml=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><meta name=ProgId content=Word.Document>
+<style>
+body{font-family:Arial,sans-serif;font-size:12pt;line-height:1.5;color:#000;max-width:700px;margin:0 auto}
+h1{font-size:16pt;color:#0F6E56;margin-bottom:4px}
+h2{font-size:13pt;color:#0F6E56;border-bottom:2px solid #0F6E56;padding-bottom:4px;margin-top:20px;margin-bottom:8px}
+h3{font-size:11pt;color:#185FA5;margin-bottom:4px}
+.meta-table{width:100%;border-collapse:collapse;margin-bottom:14px}
+.meta-table td{padding:5px 8px;border:1px solid #ccc;font-size:11pt}
+.meta-table td:first-child{background:#F5F5F5;font-weight:bold;width:30%}
+.texte-box{background:#F9F9F9;border:1px solid #ccc;border-radius:4px;padding:12px 14px;margin-bottom:14px;font-size:11pt;line-height:1.8}
+.section-box{margin-bottom:16px}
+.retro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.retro-col{border:1px solid #ccc;border-radius:4px;padding:10px 12px}
+.retro-col h3{margin-top:0}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid #ccc;font-size:10pt;color:#888;text-align:center}
+</style></head>
+<body>
+<h1>Évaluation ELBP — ${nom}</h1>
+<p style="color:#555;font-size:11pt;margin-bottom:14px">Rapport d'évaluation généré le ${dateFormatee}</p>
+
+<table class="meta-table">
+<tr><td>Nom de l'apprenant</td><td>${nom}</td></tr>
+<tr><td>Date</td><td>${dateFormatee}</td></tr>
+<tr><td>NCLC</td><td>${nclc}</td></tr>
+<tr><td>Habileté</td><td>${hab}</td></tr>
+<tr><td>Domaine</td><td>${d1}</td></tr>
+<tr><td>Tâche d'évaluation</td><td>${tache}</td></tr>
+</table>
+
+<h2>Texte de l'apprenant <span style="font-weight:normal;font-size:11pt;color:#888">(${mots} mots)</span></h2>
+<div class="texte-box">${texteFormate}</div>
+
+<h2>Corrections linguistiques</h2>
+<div class="section-box">${correctionsHtml}</div>
+
+<h2>Évaluation des critères NCLC ${nclc}</h2>
+${criteresHtml}
+${successHtml}
+
+<h2>Rétroaction de l'instructeur</h2>
+<table style="width:100%;border-collapse:collapse">
+<tr>
+<td style="width:50%;vertical-align:top;padding-right:8px">
+<div style="border:1.5px solid #3B6D11;border-radius:4px;padding:10px 12px">
+<h3 style="color:#3B6D11;margin-top:0;font-size:12pt">✓ Ce que vous avez bien réussi</h3>
+${fbReussiHtml}
+</div>
+</td>
+<td style="width:50%;vertical-align:top;padding-left:8px">
+<div style="border:1.5px solid #A32D2D;border-radius:4px;padding:10px 12px">
+<h3 style="color:#A32D2D;margin-top:0;font-size:12pt">→ Ce qu'il faut travailler</h3>
+${fbTravaillerHtml}
+</div>
+</td>
+</tr>
+</table>
+
+<div class="footer">
+Évaluation générée avec le Générateur de grilles ELBP · Niveaux de compétence linguistique canadiens (NCLC) 3e édition
+</div>
+</body></html>`;
+
+  const blob=new Blob(['\ufeff'+wordHtml],{type:'application/msword;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const nomFichier=nom.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')||'apprenant';
+  a.download='evaluation-'+nomFichier+'-nclc'+nclc+'.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+buildThemeGrid();
+</script>
+
+<style media="print">
+header,.nav-tabs,.card-head,.action-bar,footer,.fields,.btn-gen,.step-num,#theme-grid,.prefill-preview,.type-grid,#f-nclc2,#f-nclc3,#f-domaine2,#coeval-main .card:first-child,.feedback-section,#card-import-rep,#page-app,#modal-overlay{display:none!important}
+body{background:#fff;font-size:12px}
+.container{padding:0;max-width:100%}
+.card{box-shadow:none;border:none;margin:0}
+#preview-section,#bilan-section{display:block!important}
+.grille-table,.coeval-table{font-size:11px}
+.page{display:block!important}
+</style>
+</body>
+</html>
